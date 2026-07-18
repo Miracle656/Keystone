@@ -1,0 +1,11 @@
+{
+  "name": "@keystone/contracts",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "build": "forge build",
+    "test": "forge test -vvv",
+    "gas-report": "forge test --gas-report",
+    "deploy:arc-testnet": "forge script script/Deploy.s.sol --rpc-url arc_testnet --broadcast --verify"
+  }
+}

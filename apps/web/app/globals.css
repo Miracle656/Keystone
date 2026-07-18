@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+/*
+ * Keystone visual system — dark, Arc-branded navy theme.
+ * Layout/structure ported from the Claude-Design export (Landing.dc.html et
+ * al.); palette recolored to match arc.io's actual brand (dark navy, white
+ * text, gold accent) per user direction on 2026-07-16. Arc's official brand
+ * navy #1B3158 is sourced from Arc_Logos/Full Logo/SVG/Arc_Logo_Navy.svg.
+ * See DECISIONS.md.
+ */
+@theme {
+  --color-parchment: #0b1424; /* page background base (gradient set in layout.tsx) */
+  --color-ink: #f5f1e6; /* primary text — warm white */
+  --color-ink-muted: rgba(245, 241, 230, 0.74);
+  --color-ink-soft: rgba(245, 241, 230, 0.64);
+  --color-ink-faint: rgba(245, 241, 230, 0.5);
+  --color-ink-line: rgba(245, 241, 230, 0.16);
+  --color-ink-line-soft: rgba(245, 241, 230, 0.09);
+
+  --color-gold: #e7b25a;
+  --color-gold-bright: #f3c77a;
+  --color-gold-deep: #c0882e;
+
+  --color-bid: #2fbf71;
+  --color-bid-soft: rgba(47, 191, 113, 0.16);
+  --color-ask: #e5484d;
+  --color-ask-soft: rgba(229, 72, 77, 0.16);
+
+  --color-panel: #16233b; /* card/panel surface, lighter than page bg */
+  --color-cream: #12213b; /* dark inverse text — used on light/gold surfaces */
+
+  --font-sans: var(--font-space-grotesk);
+  --font-display: var(--font-cal-sans);
+  --font-mono: var(--font-jetbrains-mono);
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #0b1424;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  color: #f5f1e6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: #e7b25a;
+  color: #12213b;
+}
+
+@keyframes ks-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(34px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ks-set {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ks-flash {
+  from {
+    filter: brightness(1.35);
+  }
+  to {
+    filter: brightness(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  [data-ks] {
+    animation: none !important;
+  }
+}

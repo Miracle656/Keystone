@@ -1,0 +1,10 @@
+{
+  "_comment": "Testnet-only EOA addresses for Keystone's five operational wallets (PRD Phase 0 step 5). Addresses are public and safe to commit; private keys live only in the git-ignored root .env.",
+  "arcTestnet": {
+    "DEPLOYER": "0xBC68fe809a60DF7E50706bB0362420FC75CDAD0D",
+    "MM_BOT_A": "0x970277C5e97D66Ccee6d7B9AFFD311cF24fD9aBf",
+    "MM_BOT_B": "0x8c61b21De8d585d2797C3428D604f5d3Df0Bad5D",
+    "RESERVE_KEEPER": "0x00352Bd2f106377e530ECc87e675416dAB5F1Efa",
+    "DEMO_USER": "0xA8033fc6049863c2AD2269eD259A5B24cfd1fa0f"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "_comment": "Deployed by packages/contracts/script/Deploy.s.sol, Phase 1, 2026-07-17. See packages/contracts/broadcast/Deploy.s.sol/5042002/run-latest.json for the full transaction record.",
+  "arcTestnet": {
+    "chainId": 5042002,
+    "PairRegistry": "0xF51eBb0Ed5AD4F5ab23a7b37163bBA24463EA6D9",
+    "BalanceManager": "0x79CE00b1345E9D64830F17FbDD298851BDa6a5a8",
+    "KeystoneBook": "0x03ce491b31180bB14848F508fA418b92962Df21a",
+    "FeeCollector": "0xC1D3593fB76416FE3AC3422f4773938809b765db",
+    "KeystoneReserve": "0x3cbEb36CB35192A574EAd5E1FB4D61f1A7b45Eb3",
+    "MockOracle": "0xD7b7b802241506f833331c84477D97546b9Fc7c4",
+    "MockUSDT": "0x061e59E532B9C852d747a3a0b36CEa698b9F6d5A",
+    "pairs": {
+      "USDC/EURC": 0,
+      "USDC/USDT": 1
+    }
+  }
+}

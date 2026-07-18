@@ -1,0 +1,21 @@
+{
+  "name": "keystone",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Keystone — on-chain CLOB, cross-chain USDC router, and ERC-4626 Earn vault on Arc testnet",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @keystone/web dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "demo": "pnpm --filter @keystone/engine demo"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  },
+  "packageManager": "pnpm@10.20.0"
+}

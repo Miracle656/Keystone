@@ -1,0 +1,30 @@
+{
+  "name": "@keystone/engine",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "mm-bot-a": "tsx src/mm-bot/index.ts --wallet=MM_BOT_A",
+    "mm-bot-b": "tsx src/mm-bot/index.ts --wallet=MM_BOT_B",
+    "reserve-keeper": "tsx src/reserve-keeper/index.ts",
+    "reference-feed": "tsx src/reference-feed/update.ts",
+    "router-watcher": "tsx src/router-watcher/index.ts",
+    "demo": "tsx src/demo.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@keystone/shared": "workspace:*",
+    "@circle-fin/app-kit": "^1.10.0",
+    "@circle-fin/adapter-viem-v2": "^1.14.0",
+    "viem": "^2.21.0",
+    "pino": "^9.4.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0",
+    "pino-pretty": "^11.2.0"
+  }
+}

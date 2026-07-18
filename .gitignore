@@ -1,0 +1,35 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+dist/
+build/
+.next/
+out/
+
+# Foundry
+packages/contracts/out/
+packages/contracts/cache/
+packages/contracts/broadcast/*/*/run-*.json
+!packages/contracts/broadcast/*/*/run-latest.json
+
+# Indexer local DB
+packages/indexer/*.sqlite
+packages/indexer/*.sqlite-journal
+packages/indexer/data/
+
+# Engine bot restart-safety state (local, per-machine)
+packages/engine/state/
+
+# Logs
+*.log
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/*
+!.vscode/mcp.json
+.idea/

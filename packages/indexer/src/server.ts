@@ -1,10 +1,15 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { serve } from "@hono/node-server";
 import { rawDb } from "./db/client.js";
 import { PORT } from "./config.js";
 import { logger } from "./lib/logger.js";
 
 const app = new Hono();
+
+// Public read-only market data, no auth — open CORS so the web app (a different origin/port
+// in dev, and likely a different origin in prod too) can fetch it directly from the browser.
+app.use("*", cors());
 
 // Hardcoded to match packages/engine's router/addresses.ts convention (base=EURC,
 // quote=USDC, pairId 0) — the only active pair; USDC/USDT (pairId 1) stays paused
@@ -49,7 +54,7 @@ app.get("/api/trades/:pairId", (c) => {
   const limit = Math.min(Number(c.req.query("limit") ?? 50), 500);
   const rows = rawDb
     .prepare(
-      `SELECT price, qty, taker_is_bid AS takerIsBid, tx_hash AS txHash, block_number AS blockNumber, timestamp
+      `SELECT price, qty, taker_is_bid AS takerIsBid, tx_hash AS txHash, block_number AS blockNumber, log_index AS logIndex, timestamp
        FROM trades WHERE pair_id = ? ORDER BY block_number DESC, log_index DESC LIMIT ?`,
     )
     .all(pairId, limit);
@@ -112,6 +117,20 @@ app.get("/api/orders/:owner", (c) => {
        FROM orders WHERE LOWER(owner) = LOWER(?) ORDER BY placed_at DESC`,
     )
     .all(owner);
+  return c.json(rows);
+});
+
+app.get("/api/fills/:owner", (c) => {
+  const owner = c.req.param("owner");
+  const limit = Math.min(Number(c.req.query("limit") ?? 50), 500);
+  const rows = rawDb
+    .prepare(
+      `SELECT order_id AS orderId, maker, taker, price, qty, fee, tx_hash AS txHash,
+              block_number AS blockNumber, log_index AS logIndex, timestamp
+       FROM fills WHERE LOWER(maker) = LOWER(?) OR LOWER(taker) = LOWER(?)
+       ORDER BY block_number DESC, log_index DESC LIMIT ?`,
+    )
+    .all(owner, owner, limit);
   return c.json(rows);
 });
 

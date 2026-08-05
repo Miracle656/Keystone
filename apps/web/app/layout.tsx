@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { Cal_Sans, Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Cal_Sans, Space_Grotesk, JetBrains_Mono, Figtree } from "next/font/google";
+import { Providers } from "@/components/Providers";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -19,7 +20,18 @@ const calSans = Cal_Sans({
 const jetBrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
   subsets: ["latin"],
-  weight: ["400", "500", "700"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+// Trading-app screens (Trade/Earn/Portfolio/…) use their own Claude-Design mockup export's
+// palette + type (Figtree), distinct from Landing's Space Grotesk/Cal Sans — see the
+// `.app-theme` scope in globals.css. Loaded at the root so Next's font optimizer can subset it
+// once; only elements inside `.app-theme` actually reference `--font-figtree`.
+const figtree = Figtree({
+  variable: "--font-figtree",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
@@ -37,7 +49,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${calSans.variable} ${jetBrainsMono.variable} h-full antialiased`}
+      className={`${spaceGrotesk.variable} ${calSans.variable} ${jetBrainsMono.variable} ${figtree.variable} h-full antialiased`}
     >
       <body className="relative min-h-full font-sans text-ink">
         {/* Ambient background: dark Arc-navy gradient (top deep navy, bottom
@@ -56,7 +68,7 @@ export default function RootLayout({
               "url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22><filter id=%22n%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22/></filter><rect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23n)%22/></svg>')",
           }}
         />
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

@@ -788,6 +788,147 @@ above is now closed at the indexer layer, as that comparison anticipated it woul
 
 ---
 
+### Phase 5 — Router modal: EURC cross-chain, checked and confirmed unsupported (not assumed)
+
+User asked to cross-check "there's really no rail" for bridging EURC before accepting that
+Base/Arbitrum should stay USDC-only in the Router modal — EURC *is* deployed on both Arc and
+Base Sepolia (`eurcAddress: '0x808456652fdb597867f38412077A9182bf77359F'` on Base Sepolia, per
+`@circle-fin/app-kit`'s own `chains.mjs`), so the question was legitimate, not obviously settled.
+
+Checked both of App Kit's cross-chain mechanisms directly against the installed SDK's type
+definitions (v1.10.0) rather than trusting memory:
+- `BridgeParams.token` (the CCTP v2 bridge): typed as the literal `'USDC'` — "Defaults to
+  'USDC'. If omitted, the provider will use 'USDC' by default."
+- Gateway/`unifiedBalance` (the *other*, architecturally distinct cross-chain mechanism —
+  custody-account based, not burn-and-mint): `declare const SUPPORTED_TOKENS: readonly
+  ["USDC"]`.
+
+Both come back USDC-only, independently, at the type level. This isn't an App Kit
+configuration gap — CCTP was purpose-built for USDC specifically; Circle hasn't (as of this
+SDK version) extended either of its own cross-chain rails to EURC, despite EURC existing on
+both endpoints. Also checked `swap()` for a cross-chain-swap workaround: it's a separate
+package (`@circle-fin/swap-kit`) restricted to `SwapChain` (Ethereum/Base/Polygon/Solana
+**mainnet** only — no testnets), so not usable here regardless.
+
+**Resolution**: logged as PRD §5 "Phase 6 — Cross-chain EURC" roadmap item, not built now. The
+only buildable path today is a non-Circle generic bridge (LayerZero/Wormhole/Axelar all move
+arbitrary ERC-20s) — a real option, but a different trust/security model than the Circle-native
+rail backing USDC, and a genuinely separate integration, not a quick add. `RouterModal` auto-
+restricts the chain picker to Arc-only the moment EURC is selected, with an inline explanation,
+rather than silently offering a bridge path that would fail.
+
+### Phase 5 — Earn scope ruling: chain-aware balances, Keystone-only destinations
+
+User's original vision for Earn was a full cross-chain yield aggregator (see arbitrary
+third-party protocols across chains, deposit from wherever idle USDC sits) — that's what got
+descoped early in this project toward "real yield from our own book," and the user flagged the
+tension directly rather than silently accepting a narrower build. Splitting the vision in two
+resolved it:
+
+1. **Earn v1 destinations are Keystone venues only** — `KeystoneReserve` now, nothing else.
+   Listing third-party ERC-4626 vaults from other protocols is a real idea but a different
+   integration entirely (their contracts, their risk, their yield source) — roadmap only
+   (PRD §5), not built this hackathon.
+2. **Earn is chain-aware**: scan the user's real USDC balance per connected chain, render each
+   as "idle balance → real Keystone yield → one-tap deposit" via the Router doors already built,
+   rather than requiring the user to already be on Arc to see the vault at all.
+3. **Which chains, this pass**: Arc/Base Sepolia/Arbitrum Sepolia via the existing wagmi
+   connection — same infra `RouterModal` already uses, no new integration. Solana is a genuine
+   stretch, not silently folded in: it needs its own wallet-connection library entirely (wagmi
+   is EVM-only; Solana needs `@solana/wallet-adapter-react` or equivalent, a different
+   connection flow, different signing). Checked (not assumed) that a real door exists for it
+   either way: `BridgeChain["Solana_Devnet"]` **is** present in App Kit's CCTP-support enum
+   (`chains.mjs`) — a first grep of that enum missed it (only checked the first 10 lines), a
+   second full read confirmed it. So the primitive exists; the wallet-connection work to reach
+   it doesn't yet. Ships after the EVM version is solid, not blocking it.
+4. **Roadmap only, not built**: (a) an "Earn marketplace" of third-party ERC-4626 vaults across
+   chains — the original aggregator vision, rebuilt on Keystone's own rails instead of scraping
+   other protocols' APIs; (b) USYC as `KeystoneReserve`'s idle-capital strategy at mainnet (park
+   the non-quoting portion of the vault in Circle's tokenized T-bill fund for a Treasury-yield
+   floor under the market-making yield) — real, institutionally literate, but USYC requires
+   Circle's manual allowlisting + a $100k minimum (see contract-addresses.mdx), so not usable
+   in a testnet demo regardless.
+
+---
+
+## Phase 6/7 — Vault deposit routing bugs, and the cross-chain-to-vault dead end (2026-08-04/05)
+
+Found while the user was trying to actually deposit into the Earn vault and it wasn't earning
+anything: `VaultTable`'s DEPOSIT button had been wired to the same `useRouterModal().open()`
+call as the Trade page's nav Deposit button — which only ever calls `BalanceManager.deposit()`
+(a user's personal trading balance). It never called `KeystoneReserve.deposit()` (the actual
+ERC-4626 vault). Nobody had ever deposited into the vault through the UI, which is why TVL and
+APY sat at (effectively) zero. Fixed by building `useVaultDeposit.ts` (approve + real
+`KeystoneReserve.deposit(assets, receiver)`) and, later, folding it into `RouterModal` as a
+proper destination selector — see below.
+
+### Smaller real bugs found and fixed along the way
+
+1. **TVL stuck on "…" forever**: `useReserveTVL` did `totalAssets ? ... : null` — a real
+   on-chain `0n` is falsy in JS, so "still loading" and "genuinely holds $0" rendered
+   identically. Fixed to check `=== undefined` instead.
+2. **Missing `chainId` on every Arc-direct contract call**: `useRouterFlow.ts`'s
+   `depositDirectArc`/`withdrawDirectArcRaw`, the new `useVaultDeposit.ts`, and even
+   `useReserveTVL`'s own read were all omitting `chainId`, silently defaulting to whatever chain
+   the connected wallet happened to have active. Surfaced as `returned no data ("0x")` when the
+   wallet was still switched to Arbitrum Sepolia from a prior cross-chain Router leg (reading
+   Arc's USDC address against Arbitrum state, where that address is not a contract at all).
+   Fixed by pinning `chainId: arcTestnet.id` everywhere Arc-direct.
+3. **Adding `chainId` alone doesn't prompt a wallet network switch**: confirmed by reading
+   `@wagmi/core`'s `writeContract`/`readContract` source directly — they use `chainId` only to
+   pick the RPC client, and viem throws `ChainMismatchError` immediately if the wallet's actual
+   active chain differs, with no prompt ever shown. The thing that actually triggers the
+   wallet's "switch network" popup is calling `switchChain()` first. Added an `ensureChain()`
+   helper (checks `getAccount(config).chainId`, calls `switchChain` only if it differs) and wired
+   it into every Arc-direct write path.
+4. **`kit.retryBridge()` was being called unconditionally on any bridge failure**, including
+   failures that need the user to act (rejected wallet prompt, insufficient gas). Circle's SDK
+   only supports retrying transient errors — calling `retryBridge()` on a non-retryable failure
+   throws its own `"Retry not supported for this result, requires user action"`, masking the
+   real error. Fixed by checking the SDK's own `isRetryableError()` on the failed step first and
+   surfacing the step's real `errorMessage`/`errorCategory` (e.g. `user_rejected`) otherwise.
+
+### Cross-chain-straight-to-vault: investigated, confirmed not viable with what's installed today
+
+The ask (from a pasted third-party plan) was: bridge USDC from Base/Arbitrum directly into
+vault shares, one signature, no Arc gas needed — reusing CCTP v2's "destination hooks" to
+forward the mint into a deposit instruction, with the engine's `router-watcher` completing the
+final hop.
+
+Both premises were checked against the actual installed code, not assumed:
+
+- **`router-watcher` cannot do this.** Read `packages/engine/src/router-watcher/index.ts` — it
+  only watches Transfer events landing in a hardcoded list of *our own* demo wallets
+  (`DEPLOYER`, `MM_BOT_A`, `DEMO_USER`, etc.) whose private keys the engine process holds
+  locally, and its own code comment says explicitly: "a TEST-AUTOMATION CONVENIENCE, not the
+  production trust model... the user's own wallet signs the follow-up deposit." It has no way to
+  execute a transaction on behalf of an arbitrary connected user — that would require either
+  their private key (which we never have) or a contract-level mechanism that doesn't need one.
+- **CCTP v2 hookData/GenericExecutor forwarding is real but not shippable with our SDK.**
+  `@circle-fin/app-kit`'s type definitions document `buildForwardingHookData` and
+  `buildDepositForGenericExecutorPayload` (living in `@core/utils`) plus a required
+  `GenericExecutor` contract address on the destination chain. Neither the `@core/utils` package
+  nor those functions exist anywhere in `node_modules` — they're documented but unexported/
+  unshipped in the version we have installed. Circle's chain registry (`chains.mjs`) also has no
+  `genericExecutor` address configured for Arc Testnet. Using this would mean hand-encoding an
+  undocumented magic-byte wire format with no way to verify correctness before spending real
+  testnet USDC on live bridge attempts — not something to gamble on 5 days before submission.
+
+**Decision**: defer the one-signature cross-chain-to-vault flow. The actually-viable pattern is
+a per-user CREATE2 deposit-address factory — each connected wallet gets a deterministic Arc-side
+contract as CCTP mint recipient (beneficiary baked in at deploy time via the CREATE2 salt), plus
+a permissionless `sweep()` anyone (a keeper, or eventually the user) can call to forward that
+contract's balance into `KeystoneReserve.deposit()`. This is a known, secure, buildable pattern
+with no dependency on undocumented Circle internals — but it's genuine multi-day work (factory +
+minimal proxy/vault + keeper script) with real security surface for a money-handling contract.
+Logged here as a real roadmap item, not built now. **Shipped instead**: `RouterModal` gained a
+`destination` selector (`TRADING` vs `VAULT`), Arc-direct/USDC-only for the vault leg — same UI,
+different final contract call, no bridging risk. Cross-chain deposits still land in the trading
+balance as before; moving that into the vault today is a manual bridge → withdraw → vault-deposit
+sequence (or the internal one-flow Trading↔Vault move, see below) until the factory ships.
+
+---
+
 ## Still open (carried into Phase 1+)
 
 1. ~~Foundry install + `forge init` + OZ install~~ — done, see Phase 1 section above.

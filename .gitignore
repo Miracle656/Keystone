@@ -3,6 +3,12 @@ node_modules/
 .env.local
 .env.*.local
 dist/
+# @keystone/shared has no monorepo build orchestration (no turborepo/prepare-hook wiring, and
+# pnpm's build-script approval gate makes an automatic postinstall build unreliable — see the
+# better-sqlite3 native-build gotcha in DECISIONS.md). Committing its small compiled dist/ is
+# the zero-setup-friction choice for anyone cloning; rebuild by hand (`pnpm --filter
+# @keystone/shared build`) after editing packages/shared/src/*.ts.
+!packages/shared/dist/
 build/
 .next/
 out/

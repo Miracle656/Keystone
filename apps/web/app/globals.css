@@ -34,6 +34,34 @@
   --font-mono: var(--font-jetbrains-mono);
 }
 
+/*
+ * Trading-app screens (Trade/Earn/Portfolio/Transparency/Docs/Settings) use a separate
+ * Claude-Design mockup export's palette — near-black background, Figtree body type — kept
+ * distinct from Landing's navy/Space-Grotesk theme per user direction on 2026-07-19. Same
+ * token NAMES as the block above (so every existing component keeps working unchanged), just
+ * redefined within this scope; bid/ask green/red already matched exactly and are unchanged.
+ * Applied via the `app-theme` class on the (app) route group's root layout.
+ */
+.app-theme {
+  --color-parchment: #0b0d12;
+  --color-ink: #e7e4db;
+  --color-ink-muted: #b8bdc7;
+  --color-ink-soft: #7a828f;
+  --color-ink-faint: #6a7280;
+  --color-ink-line: #2e333d;
+  --color-ink-line-soft: #1c2028;
+
+  --color-gold: #e8b54d;
+  --color-gold-bright: #f3c77a;
+  --color-gold-deep: #c0882e;
+
+  --color-panel: #14171e;
+  --color-cream: #0b0d12;
+
+  --font-sans: var(--font-figtree);
+  --font-display: var(--font-figtree);
+}
+
 html,
 body {
   margin: 0;
@@ -53,6 +81,33 @@ body {
 ::selection {
   background: #e7b25a;
   color: #12213b;
+}
+
+/* Custom scrollbar — thin, theme-matched thumb on a transparent track, everywhere (Landing's
+ * navy ink-line and .app-theme's near-black ink-line both resolve correctly since this just
+ * references the token, not a hardcoded color). Ported from the Trade mockup's own scrollbar
+ * rule, which only applied inside that mockup's isolated bundle. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-ink-line) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-ink-line);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ink-soft);
 }
 
 @keyframes ks-reveal {
@@ -81,6 +136,13 @@ body {
   }
   to {
     filter: brightness(1);
+  }
+}
+
+/* Router modal's pending-step spinner ring (ported from the Router mockup's own bundle). */
+@keyframes rm-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 

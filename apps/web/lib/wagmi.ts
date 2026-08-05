@@ -1,5 +1,7 @@
-import { createConfig, http, injected } from "wagmi";
+import { createConfig, http, fallback, injected } from "wagmi";
 import { defineChain } from "viem";
+import { baseSepolia, arbitrumSepolia } from "viem/chains";
+import { ARC_TESTNET } from "@keystone/shared";
 
 // Same chain definition as packages/shared/src/chains.ts's ARC_TESTNET — duplicated here
 // (rather than imported) because wagmi's `defineChain` shape differs slightly from the plain
@@ -17,11 +19,27 @@ export const arcTestnet = defineChain({
   testnet: true,
 });
 
+// Arc's default RPC rate-limits aggressively under sustained polling — the same issue already
+// fixed in packages/engine/src/lib/arc.ts and appkit.ts, ported here since the Trade page polls
+// the book/balances/oracle continuously and the Router modal adds its own allowance/balance
+// reads on top. Fall back across every recorded Arc RPC provider instead of hammering one.
+const arcTransport = fallback([
+  http(ARC_TESTNET.rpcUrls.default.http[0]),
+  http(ARC_TESTNET.rpcUrls.blockdaemon.http[0]),
+  http(ARC_TESTNET.rpcUrls.drpc.http[0]),
+  http(ARC_TESTNET.rpcUrls.quicknode.http[0]),
+]);
+
+// Router door chains — Base Sepolia and Arbitrum Sepolia use viem's built-in definitions
+// directly (well-known public testnets, no Keystone-specific config needed) so the Router
+// modal can read balances and switch chains for the CCTP v2 bridge legs.
 export const wagmiConfig = createConfig({
-  chains: [arcTestnet],
+  chains: [arcTestnet, baseSepolia, arbitrumSepolia],
   connectors: [injected()],
   transports: {
-    [arcTestnet.id]: http(),
+    [arcTestnet.id]: arcTransport,
+    [baseSepolia.id]: http(),
+    [arbitrumSepolia.id]: http(),
   },
   ssr: true,
 });

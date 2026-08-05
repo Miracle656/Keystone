@@ -3,6 +3,30 @@
 // need more of the surface. Source of truth for the full ABI is the Foundry build
 // output in packages/contracts/out/.
 
+export const PAIR_REGISTRY_ABI = [
+  {
+    type: "function",
+    name: "getPair",
+    stateMutability: "view",
+    inputs: [{ name: "pairId", type: "uint256" }],
+    outputs: [
+      {
+        type: "tuple",
+        components: [
+          { name: "base", type: "address" },
+          { name: "quote", type: "address" },
+          { name: "tickSize", type: "uint256" },
+          { name: "lotSize", type: "uint256" },
+          { name: "maxLevelsPerSide", type: "uint16" },
+          { name: "takerFeeBps", type: "uint16" },
+          { name: "makerFeeBps", type: "int16" },
+          { name: "active", type: "bool" },
+        ],
+      },
+    ],
+  },
+] as const;
+
 export const BALANCE_MANAGER_ABI = [
   {
     type: "function",
@@ -283,6 +307,34 @@ export const KEYSTONE_RESERVE_ABI = [
     stateMutability: "view",
     inputs: [],
     outputs: [{ type: "uint256" }],
+  },
+  // Inherited from OpenZeppelin's ERC4626/ERC20 (not hand-written here) — added for the internal
+  // Vault -> Trading balance move (KeystoneReserve.withdraw burns the caller's shares and pays
+  // out assets via the same BalanceManager-backed _transferOut path deposit() uses in reverse).
+  {
+    type: "function",
+    name: "balanceOf",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "maxWithdraw",
+    stateMutability: "view",
+    inputs: [{ name: "owner", type: "address" }],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "withdraw",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "assets", type: "uint256" },
+      { name: "receiver", type: "address" },
+      { name: "owner", type: "address" },
+    ],
+    outputs: [{ name: "shares", type: "uint256" }],
   },
   {
     type: "function",

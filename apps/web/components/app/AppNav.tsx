@@ -30,7 +30,7 @@ export function AppNav() {
     <nav className="flex h-[54px] flex-none items-center justify-between border-b border-[#1C2028] bg-[#0E1116] px-[18px]">
       <div className="flex items-center gap-[26px]">
         <Link href="/" className="flex items-center gap-2.5 text-ink">
-          <Image src="/brand/arc-network.svg" alt="" width={26} height={26} className="rounded-md" />
+          <Image src="/brand/keystone-icon.svg" alt="" width={26} height={26} className="rounded-md" />
           <span className="text-[17px] font-extrabold tracking-[-0.02em]">Keystone</span>
         </Link>
         <div className="font-mono flex gap-1 text-[12px] font-semibold tracking-[0.03em]">

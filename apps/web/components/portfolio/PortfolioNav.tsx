@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAccount, useConnect } from "wagmi";
-import { CURRENCIES, type CurrencyCode } from "@/lib/currency";
+import { useRouterModal } from "@/components/app/RouterModalProvider";
 
 const links = [
   { href: "/trade", label: "TRADE" },
@@ -14,21 +14,18 @@ const links = [
   { href: "/docs", label: "DOCS" },
 ];
 
-const CURRENCY_LABEL: Record<CurrencyCode, string> = {
-  USD: "$ USD",
-  EUR: "€ EUR",
-  PHP: "₱ PHP",
-  BRL: "R$ BRL",
-  NGN: "₦ NGN",
-  JPY: "¥ JPY",
-  MXN: "$ MXN",
-  KRW: "₩ KRW",
-};
+function short(addr: string) {
+  return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+}
 
-export function EarnNav({ currency, onCurrency }: { currency: CurrencyCode; onCurrency: (c: CurrencyCode) => void }) {
+// Same navy tokens as EarnNav (Portfolio sits in that brand, not Trade's separate near-black
+// terminal), but with AppNav's Deposit/Withdraw/settings/wallet-chip action set on the right —
+// Portfolio is a place you act from, not just a currency display like Earn's selector.
+export function PortfolioNav() {
   const pathname = usePathname();
-  const { isConnected } = useAccount();
+  const { address, isConnected } = useAccount();
   const { connect, connectors, isPending } = useConnect();
+  const { open } = useRouterModal();
   const injectedConnector = connectors.find((c) => c.type === "injected") ?? connectors[0];
 
   return (
@@ -55,25 +52,30 @@ export function EarnNav({ currency, onCurrency }: { currency: CurrencyCode; onCu
           })}
         </div>
       </div>
-      <div className="flex items-center gap-3">
-        <select
-          value={currency}
-          onChange={(e) => onCurrency(e.target.value as CurrencyCode)}
-          className="font-mono rounded-md border-[1.5px] border-ink-line bg-parchment px-2 py-[7px] text-[12px] text-ink outline-none"
+      <div className="flex items-center gap-[9px]">
+        <button
+          onClick={() => open("deposit")}
+          className="font-mono rounded-md bg-gold px-[15px] py-[9px] text-[12px] font-bold text-cream transition-[filter] hover:brightness-110"
         >
-          {CURRENCIES.map((c) => (
-            <option key={c} value={c}>
-              {CURRENCY_LABEL[c]}
-            </option>
-          ))}
-        </select>
-        {isConnected ? (
-          <Link
-            href="/settings"
-            className="font-mono rounded-md border-[1.5px] border-ink-line px-3 py-2 text-[12px] text-bid transition-colors hover:border-ink-soft"
-          >
-            ● 1 WALLET
-          </Link>
+          DEPOSIT
+        </button>
+        <button
+          onClick={() => open("withdraw")}
+          className="font-mono rounded-md border-[1.5px] border-ink-line bg-transparent px-[15px] py-[9px] text-[12px] font-bold text-ink transition-colors hover:border-ink-soft"
+        >
+          WITHDRAW
+        </button>
+        <Link
+          href="/settings"
+          className="font-mono flex items-center rounded-md border-[1.5px] border-ink-line px-[11px] py-2 text-[13px] text-ink-soft transition-colors hover:border-ink-soft hover:text-ink"
+          aria-label="Settings"
+        >
+          ⚙
+        </Link>
+        {isConnected && address ? (
+          <span className="font-mono rounded-md border-[1.5px] border-ink-line px-3 py-2 text-[12px] text-bid">
+            ● {short(address)}
+          </span>
         ) : (
           <button
             onClick={() => injectedConnector && connect({ connector: injectedConnector })}

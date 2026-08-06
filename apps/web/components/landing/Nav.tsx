@@ -13,7 +13,7 @@ export function Nav() {
     <nav className="mx-auto flex max-w-[1280px] items-center justify-between px-[30px] py-5">
       <div className="flex items-center gap-3">
         <Image
-          src="/brand/arc-network.svg"
+          src="/brand/keystone-icon.svg"
           alt=""
           width={34}
           height={34}

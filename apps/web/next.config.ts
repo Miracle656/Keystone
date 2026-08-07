@@ -13,6 +13,9 @@ const nextConfig: NextConfig = {
     // in the Windows user profile dir otherwise confuses root inference.
     root: path.join(__dirname, "..", ".."),
   },
+  async rewrites() {
+    return [{ source: "/pitch", destination: "/pitch.html" }];
+  },
 };
 
 export default nextConfig;

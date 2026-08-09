@@ -134,6 +134,21 @@ app.get("/api/fills/:owner", (c) => {
   return c.json(rows);
 });
 
+// Global recent-orders tape (all owners), newest first — powers the Transparency page's live
+// event feed. Distinct from /api/orders/:owner, which is scoped to one wallet.
+app.get("/api/orders/recent/:pairId", (c) => {
+  const pairId = Number(c.req.param("pairId"));
+  const limit = Math.min(Number(c.req.query("limit") ?? 20), 200);
+  const rows = rawDb
+    .prepare(
+      `SELECT order_id AS orderId, owner, is_bid AS isBid, price, qty, status,
+              placed_tx AS placedTx, placed_at AS placedAt
+       FROM orders WHERE pair_id = ? ORDER BY placed_at DESC, placed_block DESC LIMIT ?`,
+    )
+    .all(pairId, limit);
+  return c.json(rows);
+});
+
 app.get("/api/reserve/apy", (c) => {
   const snapshots = rawDb
     .prepare(

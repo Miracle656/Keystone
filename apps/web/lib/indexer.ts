@@ -54,6 +54,17 @@ export interface IndexedOrder {
   updatedAt: number;
 }
 
+export interface RecentOrder {
+  orderId: string;
+  owner: string;
+  isBid: boolean;
+  price: string;
+  qty: string;
+  status: "open" | "filled" | "canceled";
+  placedTx: string;
+  placedAt: number;
+}
+
 export interface Fill {
   orderId: string;
   maker: string;
@@ -103,6 +114,7 @@ export const indexer = {
   candles: (pairId: number, interval = "1m", limit = 200) =>
     fetchJson<Candle[]>(`/api/candles/${pairId}?interval=${interval}&limit=${limit}`),
   ordersByOwner: (owner: string) => fetchJson<IndexedOrder[]>(`/api/orders/${owner}`),
+  recentOrders: (pairId: number, limit = 20) => fetchJson<RecentOrder[]>(`/api/orders/recent/${pairId}?limit=${limit}`),
   fillsByOwner: (owner: string, limit = 50) => fetchJson<Fill[]>(`/api/fills/${owner}?limit=${limit}`),
   reserveApy: () => fetchJson<ReserveApy>("/api/reserve/apy"),
   stats: (pairId?: number) => fetchJson<Stats>(`/api/stats${pairId !== undefined ? `?pairId=${pairId}` : ""}`),

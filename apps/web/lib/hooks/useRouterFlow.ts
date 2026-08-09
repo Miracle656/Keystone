@@ -7,13 +7,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { parseUnits, type Address } from "viem";
 import { ERC20_ABI, BALANCE_MANAGER_ABI } from "@keystone/shared";
 import { BALANCE_MANAGER_ADDRESS, USDC_ADDRESS } from "@/lib/addresses";
-import { createBrowserAdapter, getAppKit, BridgeChain, isRetryableError } from "@/lib/appkit";
+import { createBrowserAdapter, createSolanaBrowserAdapter, getAppKit, BridgeChain, isRetryableError } from "@/lib/appkit";
 import { arcTestnet } from "@/lib/wagmi";
+import type { SolanaProvider } from "@/lib/hooks/useSolanaWallet";
 import type { AppKit } from "@circle-fin/app-kit";
 
-export type ChainOption = "ARC" | "BASE" | "ARBITRUM";
+export type ChainOption = "ARC" | "BASE" | "ARBITRUM" | "SOLANA";
 
-const BRIDGE_CHAIN_BY_OPTION: Record<Exclude<ChainOption, "ARC">, "Base_Sepolia" | "Arbitrum_Sepolia"> = {
+const BRIDGE_CHAIN_BY_OPTION: Record<"BASE" | "ARBITRUM", "Base_Sepolia" | "Arbitrum_Sepolia"> = {
   BASE: "Base_Sepolia",
   ARBITRUM: "Arbitrum_Sepolia",
 };
@@ -124,7 +125,7 @@ export function useRouterFlow() {
   // USDC-only bridge protocol, EURC has no cross-chain path through it. The token param on
   // `run` only ever applies to the Arc-direct leg; the UI is expected to keep EURC scoped to
   // the ARC chain option, but these two functions hardcode USDC regardless as a second guard.
-  async function depositCrossChain(chain: Exclude<ChainOption, "ARC">, amountHuman: string) {
+  async function depositCrossChain(chain: "BASE" | "ARBITRUM", amountHuman: string) {
     const adapter = await getAdapter();
     const kit = getAppKit();
     setStep(0);
@@ -138,7 +139,34 @@ export function useRouterFlow() {
     return { bridgeResult: result, depositHash };
   }
 
-  async function withdrawCrossChain(chain: Exclude<ChainOption, "ARC">, amountHuman: string) {
+  // Solana's source-side signer is a completely different wallet (Phantom/Solflare via
+  // useSolanaWallet, not wagmi) from the EVM wallet that receives on Arc — so unlike
+  // depositCrossChain above, this needs two adapters, not one reused for both legs. Deposit-only:
+  // withdrawing back to Solana would need the reverse (Arc EVM adapter -> Solana adapter as
+  // destination signer for the claim step) and isn't wired into the UI yet — logged as a
+  // follow-up, not faked here.
+  async function depositFromSolana(solanaProvider: SolanaProvider, amountHuman: string) {
+    // @circle-fin/adapter-solana ships its own copy of app-kit's Blockchain/ChainDefinition
+    // types (built against a slightly different app-kit version — its Blockchain enum is
+    // missing X_Layer, which is enough for TS to treat the two as nominally unrelated even
+    // though they're structurally identical at runtime). Circle's own QUICKSTART.md mixes a
+    // SolanaAdapter into the same bridge({from, to}) call as an EVM adapter, so this is the
+    // supported shape — the cast papers over the type-declaration split, not a real risk.
+    const solanaAdapter = (await createSolanaBrowserAdapter(solanaProvider)) as unknown as Awaited<ReturnType<typeof getAdapter>>;
+    const evmAdapter = await getAdapter();
+    const kit = getAppKit();
+    setStep(0);
+    const result = await runBridge(kit, {
+      from: { adapter: solanaAdapter, chain: BridgeChain.Solana_Devnet },
+      to: { adapter: evmAdapter, chain: BridgeChain.Arc_Testnet },
+      amount: amountHuman,
+    });
+    setStep(1);
+    const depositHash = await depositDirectArc(USDC_ADDRESS, parseUnits(amountHuman, 6));
+    return { bridgeResult: result, depositHash };
+  }
+
+  async function withdrawCrossChain(chain: "BASE" | "ARBITRUM", amountHuman: string) {
     setStep(0);
     const withdrawHash = await withdrawDirectArcRaw(USDC_ADDRESS, parseUnits(amountHuman, 6));
     setStep(1);
@@ -168,15 +196,26 @@ export function useRouterFlow() {
     return hash;
   }
 
-  async function run(mode: "deposit" | "withdraw", chain: ChainOption, token: Address, amountHuman: string) {
+  async function run(
+    mode: "deposit" | "withdraw",
+    chain: ChainOption,
+    token: Address,
+    amountHuman: string,
+    solanaProvider?: SolanaProvider,
+  ) {
     setError(null);
     setStep(0);
     try {
       const amount = parseUnits(amountHuman, 6);
       let hash: string;
       if (mode === "deposit") {
-        hash = chain === "ARC" ? await depositDirectArc(token, amount) : (await depositCrossChain(chain, amountHuman)).depositHash;
+        if (chain === "ARC") hash = await depositDirectArc(token, amount);
+        else if (chain === "SOLANA") {
+          if (!solanaProvider) throw new Error("Connect a Solana wallet first");
+          hash = (await depositFromSolana(solanaProvider, amountHuman)).depositHash;
+        } else hash = (await depositCrossChain(chain, amountHuman)).depositHash;
       } else {
+        if (chain === "SOLANA") throw new Error("Withdrawing to Solana isn't supported yet");
         hash = chain === "ARC" ? await withdrawDirectArc(token, amount) : (await withdrawCrossChain(chain, amountHuman)).withdrawHash;
       }
       queryClient.invalidateQueries({ queryKey: ["book"] });

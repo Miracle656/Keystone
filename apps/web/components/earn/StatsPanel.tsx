@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useReserveTVL, useReserveFeesCaptured, useYieldHistory, type YieldRange } from "@/lib/hooks/useReserveStats";
+import { useReserveTVL, useReserveFeesCaptured, useMyReservePosition, useYieldHistory, type YieldRange } from "@/lib/hooks/useReserveStats";
 import { formatCurrency, type CurrencyCode } from "@/lib/currency";
 
 export function StatsPanel({ currency }: { currency: CurrencyCode }) {
   const [range, setRange] = useState<YieldRange>("D");
   const tvl = useReserveTVL();
   const { data: fees } = useReserveFeesCaptured();
+  const myPosition = useMyReservePosition();
   const { data: bars } = useYieldHistory(range);
 
   const maxAbs = Math.max(0.000001, ...(bars ?? []).map((b) => Math.abs(b.deltaUsd)));
@@ -15,8 +16,17 @@ export function StatsPanel({ currency }: { currency: CurrencyCode }) {
   return (
     <div className="mb-[30px] grid grid-cols-1 gap-[18px] md:grid-cols-[300px_1fr]">
       <div className="flex flex-col justify-center gap-6 rounded-2xl border border-ink-line bg-panel p-6">
+        {myPosition.isConnected && (
+          <div className="-mb-1 rounded-lg border border-gold bg-gold/10 px-3.5 py-3">
+            <div className="font-mono mb-1 text-[10px] tracking-[0.12em] text-gold">YOUR POSITION IN THE VAULT</div>
+            <div className="font-mono text-[19px] font-bold tracking-[-0.02em] text-ink">{formatCurrency(myPosition.valueUsd, currency)}</div>
+            <div className="font-mono mt-0.5 text-[10px] text-ink-soft">
+              {myPosition.shares.toLocaleString("en-US", { maximumFractionDigits: 4 })} shares · not the same as pool TVL below
+            </div>
+          </div>
+        )}
         <div>
-          <div className="font-mono mb-2 text-[10px] tracking-[0.12em] text-ink-soft">TOTAL VALUE LOCKED</div>
+          <div className="font-mono mb-2 text-[10px] tracking-[0.12em] text-ink-soft">TOTAL VALUE LOCKED (WHOLE POOL)</div>
           <div className="font-mono text-[27px] font-bold tracking-[-0.02em] text-ink">
             {tvl === null ? "…" : formatCurrency(tvl, currency)}
           </div>

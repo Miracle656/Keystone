@@ -4,11 +4,14 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useAccount, useBalance } from "wagmi";
 import { formatUnits } from "viem";
+import { useQuery } from "@tanstack/react-query";
 import { USDC_ADDRESS, EURC_ADDRESS } from "@/lib/addresses";
 import { arcTestnet } from "@/lib/wagmi";
 import { baseSepolia, arbitrumSepolia } from "viem/chains";
 import { useRouterFlow, type ChainOption } from "@/lib/hooks/useRouterFlow";
 import { useVaultDeposit } from "@/lib/hooks/useVaultDeposit";
+import { useSolanaWallet } from "@/lib/hooks/useSolanaWallet";
+import { getSolanaDevnetUsdcBalance } from "@/lib/solana";
 
 export type RouterMode = "deposit" | "withdraw" | null;
 
@@ -19,10 +22,15 @@ type TokenSymbol = "USDC" | "EURC";
 // as a real, separately-scoped roadmap item in DECISIONS.md, not something to fake here).
 export type Destination = "TRADING" | "VAULT";
 
+// Solana has no `chainId` in wagmi's EVM sense — it isn't used for chain-switching (Solana
+// wallets don't have "networks" the way EVM ones do) or for useBalance's chainId param (Solana
+// balance is read separately, see solanaUsdcBalance below), only kept here so every chain shares
+// one row shape. 0 is a harmless placeholder, never passed to any wagmi call for the SOLANA row.
 const CHAINS: { id: ChainOption; name: string; logo: string; logoBg: string | null; chainId: number }[] = [
   { id: "ARC", name: "ARC", logo: "/brand/arc-icon-white.svg", logoBg: "#1B3158", chainId: arcTestnet.id },
   { id: "BASE", name: "BASE", logo: "/brand/base.svg", logoBg: null, chainId: baseSepolia.id },
   { id: "ARBITRUM", name: "ARBITRUM", logo: "/brand/arbitrum.png", logoBg: null, chainId: arbitrumSepolia.id },
+  { id: "SOLANA", name: "SOLANA", logo: "/brand/solana.svg", logoBg: null, chainId: 0 },
 ];
 
 // Circle's CCTP v2 (what the cross-chain bridge legs run on) only moves USDC — EURC has no
@@ -36,7 +44,7 @@ const TOKENS: { symbol: TokenSymbol; address: `0x${string}`; logo: string }[] = 
 // USDC is a different ERC-20 contract on every chain — reusing Arc's address elsewhere would
 // silently read the wrong (nonexistent-there) contract and always show 0. Sourced from
 // @circle-fin/app-kit's own chain definitions (chains.mjs), not guessed.
-const USDC_ADDRESS_BY_CHAIN: Record<ChainOption, `0x${string}`> = {
+const USDC_ADDRESS_BY_CHAIN: Record<"ARC" | "BASE" | "ARBITRUM", `0x${string}`> = {
   ARC: USDC_ADDRESS,
   BASE: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
   ARBITRUM: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
@@ -54,6 +62,7 @@ export function RouterModal({
   const { address } = useAccount();
   const { run, step: routerStep, error: routerError } = useRouterFlow();
   const { deposit: vaultDeposit, step: vaultStep, error: vaultError } = useVaultDeposit();
+  const solanaWallet = useSolanaWallet();
 
   const [chain, setChain] = useState<ChainOption>("ARC");
   const [tokenSymbol, setTokenSymbol] = useState<TokenSymbol>("USDC");
@@ -94,12 +103,20 @@ export function RouterModal({
   // also be called USDC at 18 decimals but is a different asset from BalanceManager's POV) —
   // and always that chain's own USDC contract, not Arc's (tokenSymbol is only ever EURC when
   // chain is ARC, since selectToken forces that pairing, so USDC_ADDRESS_BY_CHAIN covers it).
-  const balanceToken = tokenSymbol === "EURC" ? token.address : USDC_ADDRESS_BY_CHAIN[chain];
+  const balanceToken = tokenSymbol === "EURC" ? token.address : USDC_ADDRESS_BY_CHAIN[chain as "ARC" | "BASE" | "ARBITRUM"];
   const { data: balance } = useBalance({
     address,
     chainId: selectedChain.chainId,
     token: balanceToken,
-    query: { enabled: !!address && !!mode },
+    query: { enabled: !!address && !!mode && chain !== "SOLANA" },
+  });
+  // Solana isn't an EVM balance — read separately via the SPL token account, only while the
+  // Solana row is actually selected and a Solana wallet is connected.
+  const { data: solanaBalance } = useQuery({
+    queryKey: ["solana-usdc-balance", solanaWallet.publicKey],
+    queryFn: () => getSolanaDevnetUsdcBalance(solanaWallet.publicKey!),
+    enabled: chain === "SOLANA" && !!solanaWallet.publicKey && !!mode,
+    refetchInterval: 8000,
   });
 
   function selectToken(symbol: TokenSymbol) {
@@ -110,7 +127,8 @@ export function RouterModal({
 
   if (!mode) return null;
   const isDeposit = mode === "deposit";
-  const availableHuman = balance ? Number(formatUnits(balance.value, balance.decimals)) : 0;
+  const availableHuman = chain === "SOLANA" ? (solanaBalance ?? 0) : balance ? Number(formatUnits(balance.value, balance.decimals)) : 0;
+  const solanaNeedsConnect = chain === "SOLANA" && !solanaWallet.isConnected;
 
   const railLabel = chain === "ARC" ? "DIRECT (NO BRIDGE)" : "GATEWAY + CCTP V2";
   const etaLabel = chain === "ARC" ? "~1s" : "~45s";
@@ -139,7 +157,10 @@ export function RouterModal({
   async function handleStart() {
     setPhase("pending");
     try {
-      const hash = destination === "VAULT" ? await vaultDeposit(amount || "0") : await run(mode!, chain, token.address, amount || "0");
+      const hash =
+        destination === "VAULT"
+          ? await vaultDeposit(amount || "0")
+          : await run(mode!, chain, token.address, amount || "0", chain === "SOLANA" ? solanaWallet.provider : undefined);
       setTxHash(hash);
       setPhase("success");
     } catch {
@@ -196,20 +217,22 @@ export function RouterModal({
             <div className="font-mono mb-2.5 text-[10px] tracking-[0.12em]" style={{ color: "#6A7280" }}>
               {isDeposit ? "FROM CHAIN" : "TO CHAIN"}
             </div>
-            <div className="mb-5 grid grid-cols-3 gap-2.5">
+            <div className="mb-5 grid grid-cols-4 gap-2.5">
               {CHAINS.map((c) => {
-                const disabled = (tokenSymbol === "EURC" || destination === "VAULT") && c.id !== "ARC";
+                const disabled = ((tokenSymbol === "EURC" || destination === "VAULT") && c.id !== "ARC") || (c.id === "SOLANA" && !isDeposit);
                 return (
                   <button
                     key={c.id}
                     onClick={() => !disabled && setChain(c.id)}
                     disabled={disabled}
                     title={
-                      disabled
-                        ? destination === "VAULT"
-                          ? "Vault deposits are Arc-direct only for now — bridge to your wallet first"
-                          : "EURC has no CCTP bridge path — Arc only"
-                        : undefined
+                      c.id === "SOLANA" && !isDeposit
+                        ? "Withdrawing to Solana isn't supported yet — deposit only"
+                        : disabled
+                          ? destination === "VAULT"
+                            ? "Vault deposits are Arc-direct only for now — bridge to your wallet first"
+                            : "EURC has no CCTP bridge path — Arc only"
+                          : undefined
                     }
                     className="flex flex-col items-center gap-2 rounded-lg py-3.5 disabled:cursor-not-allowed disabled:opacity-35"
                     style={{
@@ -236,6 +259,35 @@ export function RouterModal({
             {destination === "VAULT" && (
               <div className="font-mono mb-4 -mt-2.5 text-[10px]" style={{ color: "#6A7280" }}>
                 Vault deposits are USDC-only, Arc-direct only — this deposits straight into KeystoneReserve, not your trading balance.
+              </div>
+            )}
+            {chain === "SOLANA" && isDeposit && (
+              <div className="mb-4 flex items-center justify-between rounded-lg p-[12px_14px]" style={{ border: "1px solid #2E333D", background: "#14171E" }}>
+                <div>
+                  <div className="font-mono text-[11px] font-bold">Solana wallet (devnet)</div>
+                  <div className="font-mono mt-0.5 text-[10px]" style={{ color: "#6A7280" }}>
+                    {solanaWallet.isConnected
+                      ? `${solanaWallet.publicKey!.slice(0, 4)}…${solanaWallet.publicKey!.slice(-4)}`
+                      : "Phantom or Solflare, Solana devnet"}
+                  </div>
+                </div>
+                <button
+                  onClick={() => (solanaWallet.isConnected ? solanaWallet.disconnect() : solanaWallet.connect())}
+                  disabled={solanaWallet.isConnecting}
+                  className="font-mono rounded-md px-3 py-2 text-[11px] font-bold disabled:opacity-50"
+                  style={{
+                    background: solanaWallet.isConnected ? "transparent" : "#E8B54D",
+                    color: solanaWallet.isConnected ? "#6A7280" : "#0B0D12",
+                    border: solanaWallet.isConnected ? "1.5px solid #2E333D" : "none",
+                  }}
+                >
+                  {solanaWallet.isConnecting ? "CONNECTING…" : solanaWallet.isConnected ? "DISCONNECT" : "CONNECT"}
+                </button>
+              </div>
+            )}
+            {solanaWallet.error && chain === "SOLANA" && (
+              <div className="font-mono mb-4 -mt-2.5 text-[10px]" style={{ color: "#E5484D" }}>
+                {solanaWallet.error}
               </div>
             )}
 
@@ -323,17 +375,19 @@ export function RouterModal({
 
             <button
               onClick={handleStart}
-              disabled={!address || !amount || Number(amount) <= 0}
+              disabled={!address || solanaNeedsConnect || !amount || Number(amount) <= 0}
               className="font-mono w-full rounded-lg py-[14px] text-[14px] font-bold tracking-[0.05em] disabled:opacity-40"
               style={{ background: "#E8B54D", color: "#0B0D12" }}
             >
               {!address
                 ? "CONNECT WALLET FIRST"
-                : destination === "VAULT"
-                  ? "DEPOSIT INTO VAULT"
-                  : isDeposit
-                    ? `DEPOSIT ${tokenSymbol}`
-                    : `WITHDRAW ${tokenSymbol}`}
+                : solanaNeedsConnect
+                  ? "CONNECT SOLANA WALLET"
+                  : destination === "VAULT"
+                    ? "DEPOSIT INTO VAULT"
+                    : isDeposit
+                      ? `DEPOSIT ${tokenSymbol}`
+                      : `WITHDRAW ${tokenSymbol}`}
             </button>
           </div>
         )}

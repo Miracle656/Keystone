@@ -9,7 +9,7 @@ import { formatCurrency, type CurrencyCode } from "@/lib/currency";
 export function UnifiedBalancePanel({ currency }: { currency: CurrencyCode }) {
   const { isConnected } = useAccount();
   const { connect, connectors, isPending } = useConnect();
-  const { balances, totalHuman, isLoading } = useUnifiedBalance();
+  const { balances, totalHuman, isLoading, solanaWallet } = useUnifiedBalance();
   const injectedConnector = connectors.find((c) => c.type === "injected") ?? connectors[0];
 
   if (!isConnected) {
@@ -68,11 +68,17 @@ export function UnifiedBalancePanel({ currency }: { currency: CurrencyCode }) {
               </div>
             </div>
           ))}
-          <div className="flex items-center justify-center gap-2.5 rounded-lg border border-dashed border-[rgba(243,239,228,0.25)] px-3 py-2.5">
-            <span className="font-mono text-[10.5px]" style={{ color: "rgba(243,239,228,0.5)" }}>
-              + Solana, more — coming soon
-            </span>
-          </div>
+          {!solanaWallet.isConnected && (
+            <button
+              onClick={() => solanaWallet.connect()}
+              disabled={solanaWallet.isConnecting}
+              className="flex items-center justify-center gap-2.5 rounded-lg border border-dashed border-[rgba(243,239,228,0.25)] px-3 py-2.5 transition-colors hover:border-[rgba(243,239,228,0.45)] disabled:opacity-60"
+            >
+              <span className="font-mono text-[10.5px]" style={{ color: "rgba(243,239,228,0.65)" }}>
+                {solanaWallet.isConnecting ? "CONNECTING…" : "+ CONNECT SOLANA WALLET"}
+              </span>
+            </button>
+          )}
         </div>
         <Link href="/settings" className="font-mono mt-3 inline-block text-[11px]" style={{ color: "#E7B25A" }}>
           + MANAGE WALLETS IN SETTINGS →

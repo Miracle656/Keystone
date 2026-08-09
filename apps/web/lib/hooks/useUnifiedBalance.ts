@@ -1,11 +1,14 @@
 "use client";
 
 import { useAccount, useReadContracts } from "wagmi";
+import { useQuery } from "@tanstack/react-query";
 import { formatUnits } from "viem";
 import { ERC20_ABI } from "@keystone/shared";
 import { USDC_ADDRESS } from "@/lib/addresses";
 import { arcTestnet } from "@/lib/wagmi";
 import { baseSepolia, arbitrumSepolia } from "viem/chains";
+import { useSolanaWallet } from "@/lib/hooks/useSolanaWallet";
+import { getSolanaDevnetUsdcBalance } from "@/lib/solana";
 
 const USDC_ADDRESS_BY_CHAIN: Record<string, `0x${string}`> = {
   ARC: USDC_ADDRESS,
@@ -31,12 +34,13 @@ export interface ChainBalance {
   balanceHuman: number;
 }
 
-/** Real per-chain USDC balance for the single connected EVM wallet — Arc, Base Sepolia,
- * Arbitrum Sepolia today (same 3 chains the Router modal already bridges between). Solana is
- * a separate, real, and larger integration (its own wallet-connection library entirely, wagmi
- * is EVM-only) — deferred, not silently included; see DECISIONS.md "Earn scope ruling". */
+/** Real per-chain USDC balance for the connected wallet(s) — Arc, Base Sepolia, Arbitrum
+ * Sepolia via the single connected EVM wallet, plus Solana Devnet via a separately-connected
+ * Solana wallet (see useSolanaWallet) once the user has one linked — wagmi itself is EVM-only,
+ * so Solana's balance is read via its own SPL token account query, not wagmi's readContracts. */
 export function useUnifiedBalance() {
   const { address, isConnected } = useAccount();
+  const solanaWallet = useSolanaWallet();
 
   const { data, isLoading } = useReadContracts({
     contracts: CHAINS.map((c) => ({
@@ -49,12 +53,39 @@ export function useUnifiedBalance() {
     query: { enabled: !!address },
   });
 
-  const balances: ChainBalance[] = CHAINS.map((c, i) => {
+  const { data: solanaBalanceHuman, isLoading: solanaLoading } = useQuery({
+    queryKey: ["solana-usdc-balance", solanaWallet.publicKey],
+    queryFn: () => getSolanaDevnetUsdcBalance(solanaWallet.publicKey!),
+    enabled: !!solanaWallet.publicKey,
+    refetchInterval: 8000,
+  });
+
+  const evmBalances: ChainBalance[] = CHAINS.map((c, i) => {
     const raw = data?.[i]?.status === "success" ? (data[i].result as bigint) : 0n;
     return { ...c, balance: raw, balanceHuman: Number(formatUnits(raw, 6)) };
   });
 
+  const balances: ChainBalance[] = solanaWallet.isConnected
+    ? [
+        ...evmBalances,
+        {
+          id: "SOLANA",
+          name: "Solana",
+          logo: "/brand/solana.svg",
+          logoBg: null,
+          balance: BigInt(Math.round((solanaBalanceHuman ?? 0) * 1e6)),
+          balanceHuman: solanaBalanceHuman ?? 0,
+        },
+      ]
+    : evmBalances;
+
   const totalHuman = balances.reduce((sum, b) => sum + b.balanceHuman, 0);
 
-  return { isConnected, isLoading, balances, totalHuman };
+  return {
+    isConnected,
+    isLoading: isLoading || (solanaWallet.isConnected && solanaLoading),
+    balances,
+    totalHuman,
+    solanaWallet,
+  };
 }

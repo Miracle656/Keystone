@@ -35,7 +35,12 @@ const arcTransport = fallback([
 // modal can read balances and switch chains for the CCTP v2 bridge legs.
 export const wagmiConfig = createConfig({
   chains: [arcTestnet, baseSepolia, arbitrumSepolia],
-  connectors: [injected()],
+  // Explicitly targeted at MetaMask, not a bare injected() — with Phantom's Solana extension
+  // now also connected (see useSolanaWallet), a bare injected() grabs whichever wallet last won
+  // window.ethereum, which on many setups is Phantom's EVM-compat mode, not MetaMask. wagmi's
+  // own metaMask target explicitly excludes providers carrying an isPhantom flag, so EVM
+  // actions stay pointed at MetaMask regardless of extension load order.
+  connectors: [injected({ target: "metaMask" })],
   transports: {
     [arcTestnet.id]: arcTransport,
     [baseSepolia.id]: http(),

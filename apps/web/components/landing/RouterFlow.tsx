@@ -126,14 +126,14 @@ export function RouterFlow() {
               <animateMotion dur="6s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.5;0.92;1">
                 <mpath href="#pout1" />
               </animateMotion>
-              <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.5;0.56;0.9;0.95" dur="6s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.5;0.56;0.9;0.95;1" dur="6s" repeatCount="indefinite" />
             </g>
             <g opacity={0}>
               <use href="#sym-usdc" x={-13} y={-13} width={26} height={26} />
               <animateMotion dur="6s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.54;0.92;1">
                 <mpath href="#pout2" />
               </animateMotion>
-              <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.54;0.6;0.9;0.95" dur="6s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0;0;1;1;0;0" keyTimes="0;0.54;0.6;0.9;0.95;1" dur="6s" repeatCount="indefinite" />
             </g>
           </svg>
           <div className="mt-1 flex justify-between border-t border-ink/12 px-3.5 pb-2 pt-2.5 font-mono text-[11px] tracking-[0.06em] text-ink-faint">

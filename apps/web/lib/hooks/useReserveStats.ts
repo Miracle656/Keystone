@@ -1,6 +1,6 @@
 "use client";
 
-import { useReadContract } from "wagmi";
+import { useAccount, useReadContract, useReadContracts } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { KEYSTONE_RESERVE_ABI } from "@keystone/shared";
 import { KEYSTONE_RESERVE_ADDRESS } from "@/lib/addresses";
@@ -22,6 +22,35 @@ export function useReserveTVL() {
   // that into the same "…" as still-loading (undefined), or a correctly-empty vault reads as
   // permanently stuck loading.
   return totalAssets === undefined ? null : Number(totalAssets) / 1e6;
+}
+
+/** The connected wallet's own Reserve position — distinct from useReserveTVL, which is the
+ * whole pool. TVL already includes everyone's deposits (including this user's), so it alone
+ * can't answer "did my deposit register" — this is the number that can. Same shares/sharePrice
+ * math as usePortfolio.ts's reserve block, factored out so Earn can show it too, not just
+ * Portfolio. */
+export function useMyReservePosition() {
+  const { address, isConnected } = useAccount();
+  const { data } = useReadContracts({
+    contracts: [
+      { address: KEYSTONE_RESERVE_ADDRESS, abi: KEYSTONE_RESERVE_ABI, functionName: "balanceOf", args: address ? [address] : undefined, chainId: arcTestnet.id },
+      { address: KEYSTONE_RESERVE_ADDRESS, abi: KEYSTONE_RESERVE_ABI, functionName: "totalAssets", chainId: arcTestnet.id },
+      { address: KEYSTONE_RESERVE_ADDRESS, abi: KEYSTONE_RESERVE_ABI, functionName: "totalSupply", chainId: arcTestnet.id },
+    ],
+    query: { enabled: !!address, refetchInterval: 8000 },
+  });
+
+  const shares = data?.[0]?.status === "success" ? (data[0].result as bigint) : 0n;
+  const totalAssets = data?.[1]?.status === "success" ? (data[1].result as bigint) : 0n;
+  const totalSupply = data?.[2]?.status === "success" ? (data[2].result as bigint) : 0n;
+  const sharePrice = totalSupply === 0n ? 1 : Number(totalAssets) / Number(totalSupply);
+
+  return {
+    isConnected,
+    shares: Number(shares) / 1e6,
+    sharePrice,
+    valueUsd: (Number(shares) / 1e6) * sharePrice,
+  };
 }
 
 export function useReserveFeesCaptured() {

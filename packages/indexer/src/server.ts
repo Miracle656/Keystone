@@ -18,6 +18,11 @@ const PAIRS = [
   { pairId: 0, base: "EURC", quote: "USDC", tickSize: "100", lotSize: "1000000" },
 ];
 
+// Cheap liveness check — no DB query, just confirms the process is up and answering HTTP.
+// Meant for uptime monitors (UptimeRobot etc.) pinging this on a schedule, which as a side
+// effect keeps Render's free-tier instance from spinning down after 15min idle.
+app.get("/health", (c) => c.json({ status: "ok" }));
+
 app.get("/api/pairs", (c) => c.json(PAIRS));
 
 app.get("/api/book/:pairId", (c) => {

@@ -18,8 +18,8 @@ export default function TradePage() {
       <div className="flex h-full min-h-0 flex-col overflow-hidden">
         <PairStatsBar pairId={PAIR_ID} />
 
-        <div className="grid min-h-0 flex-1 grid-cols-[1fr_288px_300px]">
-          <div className="flex min-h-0 flex-col border-r border-[#1C2028]">
+        <div className="grid min-h-0 min-w-0 flex-1 grid-cols-[minmax(0,1fr)_288px_300px]">
+          <div className="flex min-h-0 min-w-0 flex-col border-r border-[#1C2028]">
             <CandleChart pairId={PAIR_ID} />
             <OpenOrders />
           </div>

@@ -1,5 +1,14 @@
 import { createPublicClient, createWalletClient, http, fallback, parseEventLogs, type Address, type Account } from "viem";
-import { ARC_TESTNET, BALANCE_MANAGER_ABI, ERC20_ABI, KEYSTONE_BOOK_ABI, MOCK_ORACLE_ABI, KEYSTONE_RESERVE_ABI } from "@keystone/shared";
+import {
+  ARC_TESTNET,
+  ARC_TESTNET_CONTRACTS,
+  BALANCE_MANAGER_ABI,
+  ERC20_ABI,
+  KEYSTONE_BOOK_ABI,
+  MOCK_ORACLE_ABI,
+  KEYSTONE_RESERVE_ABI,
+  PYTH_ABI,
+} from "@keystone/shared";
 
 // Arc's primary public testnet RPC rate-limits fairly aggressively under
 // back-to-back calls (hit repeatedly across Phase 0 balance checks, the Phase 2
@@ -186,6 +195,23 @@ export async function getOracleMid(oracleAddress: Address, base: Address, quote:
     functionName: "getMid",
     args: [base, quote],
   });
+}
+
+/** Real decentralized EUR/USD, read directly from Pyth's live Arc Testnet deployment — see
+ * ARC_TESTNET_CONTRACTS.PYTH for how that address/feed id were verified. 3600s staleness bound
+ * is generous relative to the feed's actual update cadence (observed ~7-75min between updates
+ * during verification) without being so tight a normal gap between updates causes a revert. */
+export async function getPythEurUsdMid(): Promise<bigint> {
+  const { price, expo } = await arcPublicClient().readContract({
+    address: ARC_TESTNET_CONTRACTS.PYTH.address,
+    abi: PYTH_ABI,
+    functionName: "getPriceNoOlderThan",
+    args: [ARC_TESTNET_CONTRACTS.PYTH.EUR_USD_FEED_ID, 3600n],
+  });
+  // Pyth prices are price * 10^expo (expo is negative for FX pairs); MockOracle.setMid expects
+  // an 18-decimal-scaled value, matching the rest of the codebase's mid1e18 convention.
+  const decimals = -expo;
+  return decimals >= 18 ? price / 10n ** BigInt(decimals - 18) : price * 10n ** BigInt(18 - decimals);
 }
 
 export async function setOracleMid(account: Account, oracleAddress: Address, base: Address, quote: Address, mid1e18: bigint) {

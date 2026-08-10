@@ -74,6 +74,10 @@ export declare const ARC_TESTNET_CONTRACTS: {
     readonly MULTICALL3: "0xcA11bde05977b3631167028862bE2a173976CA11";
     readonly PERMIT2: "0x000000000022D473030F116dDEE9F6B43aC78BA3";
     readonly INFINITY_NAME: "0x76a816EFa69e3183972ff7a231F5C8d7b065d9De";
+    readonly PYTH: {
+        readonly address: "0x2880aB155794e7179c9eE2e38200202908C17B43";
+        readonly EUR_USD_FEED_ID: "0xa995d00bb36a63cef7fd2c287dc105fc8f3d93779f062f09551b0af3e81ec30b";
+    };
 };
 export declare const APP_KIT_NETWORK_SUPPORT: {
     readonly arcTestnet: {

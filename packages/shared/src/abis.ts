@@ -344,3 +344,30 @@ export const KEYSTONE_RESERVE_ABI = [
     outputs: [{ type: "uint32" }],
   },
 ] as const;
+
+// Minimal IPyth fragment — just the one read reference-feed needs.
+// getPriceNoOlderThan reverts (StalePrice) if the feed hasn't updated within `age` seconds,
+// unlike getPriceUnsafe which returns whatever's stored with no freshness check at all — the
+// safer of the two per Pyth's own docs, worth the revert-and-retry-next-cycle behavior it costs.
+export const PYTH_ABI = [
+  {
+    type: "function",
+    name: "getPriceNoOlderThan",
+    stateMutability: "view",
+    inputs: [
+      { name: "id", type: "bytes32" },
+      { name: "age", type: "uint256" },
+    ],
+    outputs: [
+      {
+        type: "tuple",
+        components: [
+          { name: "price", type: "int64" },
+          { name: "conf", type: "uint64" },
+          { name: "expo", type: "int32" },
+          { name: "publishTime", type: "uint256" },
+        ],
+      },
+    ],
+  },
+] as const;

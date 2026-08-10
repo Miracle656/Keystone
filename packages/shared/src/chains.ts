@@ -107,6 +107,18 @@ export const ARC_TESTNET_CONTRACTS = {
   INFINITY_NAME: "0x76a816EFa69e3183972ff7a231F5C8d7b065d9De",
   // Fallback candidate per PRD open question #5 (15-min spike, pick one):
   // ANS — ARC Name Service — https://arcnames.xyz/ (address not yet verified)
+
+  // --- Oracles ---
+  // Verified live 2026-08-10: address confirmed via docs.pyth.network's EVM contract-address
+  // table (row "Arc Network Testnet"), then independently checked two ways rather than trusted
+  // from the doc page alone — eth_getCode against this address returned real proxy bytecode
+  // (not empty), and calling getPriceUnsafe(EUR_USD feed id) returned a live, fresh EUR/USD
+  // price matching the market rate. Feed ID sourced from Pyth's own Hermes API
+  // (hermes.pyth.network/v2/price_feeds), not scraped off a rendered doc page.
+  PYTH: {
+    address: "0x2880aB155794e7179c9eE2e38200202908C17B43",
+    EUR_USD_FEED_ID: "0xa995d00bb36a63cef7fd2c287dc105fc8f3d93779f062f09551b0af3e81ec30b",
+  },
 } as const;
 
 // Source: https://docs.arc.io/app-kit/references/supported-blockchains.md

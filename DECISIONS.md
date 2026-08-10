@@ -941,3 +941,37 @@ sequence (or the internal one-flow Trading↔Vault move, see below) until the fa
 5. Insertion-hint gas profile (`MAX_HINT_SCAN`) — validate in Foundry, Phase 1.
 6. Arcscan Etherscan-compatible verification API — confirm endpoint/key format before wiring
    `forge script --verify`, Phase 1.
+
+---
+
+## Reference feed upgraded to Pyth (2026-08-10)
+
+Resolves item 6 above in spirit and the open question from earlier in `reference-feed/update.ts`'s
+own doc comment ("Chainlink/Pyth/Stork are all listed as available on Arc... but a specific live
+testnet EUR/USD feed address wasn't verified"). It's now verified, three independent ways, not
+just found in a doc page and trusted:
+
+1. `docs.pyth.network`'s EVM contract-addresses page lists a row for "Arc Network Testnet" —
+   address `0x2880aB155794e7179c9eE2e38200202908C17B43`.
+2. `eth_getCode` against that address on Arc Testnet's own RPC returned real proxy bytecode, not
+   empty — confirms something is actually deployed there, not a stale/wrong doc entry.
+3. Called `getPriceUnsafe()` on it directly with the EUR/USD feed id (`0xa995d0...ec30b`, pulled
+   from Pyth's own Hermes API — `hermes.pyth.network/v2/price_feeds` — not scraped off a
+   JS-rendered doc table) and got back a live, fresh price (1.15626, published ~75min prior at
+   time of check) matching the range Frankfurter had been giving all session.
+
+`reference-feed/update.ts` now reads this on-chain via `getPythEurUsdMid()`
+(`packages/engine/src/lib/arc.ts`) instead of calling Frankfurter's REST API, then pushes into
+`MockOracle.setMid()` exactly as before — same architecture, upgraded data provenance. Verified
+live: real `run-once` push succeeded, tx
+`0x264569dbd4a891aab58bafb9f638145377695664c6e88676a5a667c1a97ec506`.
+
+**Still not a fully decentralized read path, and said so in the UI** (Trade page's oracle badge
+now reads `PYTH` instead of `SIMULATED`, Docs page tags MockOracle `PYTH-SOURCED` instead of
+`SIMULATED` — not `REAL`, deliberately): `reference-feed` reads Pyth on-chain but then still
+*pushes* the result into `MockOracle` as a single operator. Consumers (mm-bots, reserve-keeper,
+`KeystoneReserve`'s NAV math) all read `MockOracle`, not Pyth directly. Removing that push step
+entirely — bots reading Pyth directly, `KeystoneReserve` pointed at a small IPyth-adapter instead
+of `MockOracle` — is the further step, and for `KeystoneReserve` specifically means a redeploy
+(its `ORACLE` reference is `immutable`) plus migrating the live TVL. Logged as a real next step,
+not done here.

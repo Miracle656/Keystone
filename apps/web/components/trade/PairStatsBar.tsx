@@ -50,7 +50,9 @@ export function PairStatsBar({ pairId }: { pairId: number }) {
       <div className="font-mono ml-auto text-[9px] text-[#6A7280]">
         ORACLE MID{" "}
         <span className="text-[9px] font-normal">{oracleMid ? (Number(oracleMid) / 1e18).toFixed(4) : "…"}</span>{" "}
-        <span className="rounded border border-gold px-[5px] py-[1px] text-gold">SIMULATED</span>
+        <span className="rounded border border-gold px-[5px] py-[1px] text-gold" title="Real EUR/USD from Pyth's live Arc Testnet feed, pushed on-chain every 5 min">
+          PYTH
+        </span>
       </div>
     </div>
   );

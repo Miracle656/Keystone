@@ -527,3 +527,31 @@ export declare const KEYSTONE_RESERVE_ABI: readonly [{
         readonly type: "uint32";
     }];
 }];
+export declare const PYTH_ABI: readonly [{
+    readonly type: "function";
+    readonly name: "getPriceNoOlderThan";
+    readonly stateMutability: "view";
+    readonly inputs: readonly [{
+        readonly name: "id";
+        readonly type: "bytes32";
+    }, {
+        readonly name: "age";
+        readonly type: "uint256";
+    }];
+    readonly outputs: readonly [{
+        readonly type: "tuple";
+        readonly components: readonly [{
+            readonly name: "price";
+            readonly type: "int64";
+        }, {
+            readonly name: "conf";
+            readonly type: "uint64";
+        }, {
+            readonly name: "expo";
+            readonly type: "int32";
+        }, {
+            readonly name: "publishTime";
+            readonly type: "uint256";
+        }];
+    }];
+}];

@@ -18,4 +18,7 @@ export const POLL_INTERVAL_MS = Number(process.env.INDEXER_POLL_INTERVAL_MS ?? 5
 export const LOG_BATCH_SIZE = BigInt(process.env.INDEXER_LOG_BATCH_SIZE ?? "2000");
 export const RESERVE_SNAPSHOT_INTERVAL_MS = Number(process.env.INDEXER_RESERVE_SNAPSHOT_INTERVAL_MS ?? 60_000);
 
-export const PORT = Number(process.env.INDEXER_PORT ?? 8787);
+// Render (and most PaaS Docker runners) inject PORT and route traffic to whatever the container
+// listens on — that takes priority over the app's own INDEXER_PORT default so a hosting platform
+// never needs a wrapper command to rename its own env var into ours.
+export const PORT = Number(process.env.PORT ?? process.env.INDEXER_PORT ?? 8787);

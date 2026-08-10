@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: keystone-indexer
+    runtime: docker
+    dockerfilePath: ./packages/indexer/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /api/pairs
+    envVars:
+      # Public contract addresses (Arc Testnet) — not secrets, same values as the repo's
+      # .env.example and DECISIONS.md.
+      - key: KEYSTONE_BOOK_ADDRESS
+        value: "0x03ce491b31180bB14848F508fA418b92962Df21a"
+      - key: KEYSTONE_RESERVE_ADDRESS
+        value: "0x3cbEb36CB35192A574EAd5E1FB4D61f1A7b45Eb3"

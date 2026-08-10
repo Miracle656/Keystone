@@ -1,0 +1,8 @@
+node_modules
+**/node_modules
+.next
+**/.next
+.git
+apps/web/.env.local
+.env
+packages/indexer/data

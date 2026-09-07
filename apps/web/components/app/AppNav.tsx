@@ -3,8 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { useAccount } from "wagmi";
 import { useRouterModal } from "./RouterModalProvider";
+import { useWalletConnect } from "@/lib/hooks/useWalletConnect";
+import { usePasskeyWallet } from "@/lib/hooks/usePasskeyWallet";
 
 const links = [
   { href: "/trade", label: "TRADE" },
@@ -21,10 +23,9 @@ function short(addr: string) {
 export function AppNav() {
   const pathname = usePathname();
   const { address, isConnected } = useAccount();
-  const { connect, connectors, isPending } = useConnect();
-  const { disconnect } = useDisconnect();
+  const { ready, connectWallet, disconnectWallet } = useWalletConnect();
+  const { createWallet, busy: passkeyBusy } = usePasskeyWallet();
   const { open } = useRouterModal();
-  const injectedConnector = connectors.find((c) => c.type === "injected") ?? connectors[0];
 
   return (
     <nav className="flex h-[54px] flex-none items-center justify-between border-b border-[#1C2028] bg-[#0E1116] px-[18px]">
@@ -72,20 +73,31 @@ export function AppNav() {
         </Link>
         {isConnected && address ? (
           <button
-            onClick={() => disconnect()}
+            onClick={() => disconnectWallet()}
             className="font-mono rounded-md border border-[#2E333D] px-3 py-2 text-[12px] text-bid"
             title="Click to disconnect"
           >
             ● {short(address)}
           </button>
         ) : (
-          <button
-            onClick={() => injectedConnector && connect({ connector: injectedConnector })}
-            disabled={isPending || !injectedConnector}
-            className="font-mono rounded-md border border-[#2E333D] px-3 py-2 text-[12px] text-[#7A828F] transition-colors hover:border-[#565D6B] hover:text-ink disabled:opacity-50"
-          >
-            {isPending ? "Connecting…" : "Connect wallet"}
-          </button>
+          <>
+            {/* Primary path for someone with no wallet yet — passkey, no seed phrase. */}
+            <button
+              onClick={() => createWallet()}
+              disabled={!ready || passkeyBusy}
+              className="font-mono rounded-md bg-gold px-3 py-2 text-[12px] font-bold text-[#0B0D12] transition-[filter] hover:brightness-110 disabled:opacity-50"
+            >
+              Get started
+            </button>
+            {/* Secondary path for someone who already has MetaMask/another wallet. */}
+            <button
+              onClick={() => connectWallet()}
+              disabled={!ready}
+              className="font-mono rounded-md border border-[#2E333D] px-3 py-2 text-[12px] text-[#7A828F] transition-colors hover:border-[#565D6B] hover:text-ink disabled:opacity-50"
+            >
+              Connect wallet
+            </button>
+          </>
         )}
       </div>
     </nav>

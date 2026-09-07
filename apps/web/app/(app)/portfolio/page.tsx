@@ -1,17 +1,17 @@
 "use client";
 
-import { useAccount, useConnect } from "wagmi";
+import { useAccount } from "wagmi";
 import { PortfolioNav } from "@/components/portfolio/PortfolioNav";
 import { PortfolioStats } from "@/components/portfolio/PortfolioStats";
 import { BookBalances } from "@/components/portfolio/BookBalances";
 import { ReservePosition } from "@/components/portfolio/ReservePosition";
 import { PortfolioOrders } from "@/components/portfolio/PortfolioOrders";
 import { usePortfolio } from "@/lib/hooks/usePortfolio";
+import { useWalletConnect } from "@/lib/hooks/useWalletConnect";
 
 export default function PortfolioPage() {
   const { isConnected } = useAccount();
-  const { connect, connectors, isPending } = useConnect();
-  const injectedConnector = connectors.find((c) => c.type === "injected") ?? connectors[0];
+  const { ready, connectWallet } = useWalletConnect();
   const { totalValueUsd, bookValueUsd, reserveValueUsd, usdc, eurc, reserve, openOrders } = usePortfolio();
 
   return (
@@ -34,11 +34,11 @@ export default function PortfolioPage() {
               Your Book balances, Reserve position, and open orders — read straight from Keystone&apos;s contracts on Arc.
             </p>
             <button
-              onClick={() => injectedConnector && connect({ connector: injectedConnector })}
-              disabled={isPending || !injectedConnector}
+              onClick={() => connectWallet()}
+              disabled={!ready}
               className="font-mono rounded-lg bg-gold px-7 py-3.5 text-[13px] font-bold text-cream transition-colors hover:bg-gold-bright disabled:opacity-50"
             >
-              {isPending ? "CONNECTING…" : "CONNECT WALLET →"}
+              CONNECT WALLET →
             </button>
           </div>
         ) : (

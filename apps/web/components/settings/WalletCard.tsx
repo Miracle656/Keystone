@@ -1,8 +1,10 @@
 "use client";
 
-import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
+import { useAccount, useSwitchChain } from "wagmi";
 import { arcTestnet } from "@/lib/wagmi";
 import { baseSepolia, arbitrumSepolia } from "viem/chains";
+import { useWalletConnect } from "@/lib/hooks/useWalletConnect";
+import { usePasskeyWallet } from "@/lib/hooks/usePasskeyWallet";
 
 const CHAINS = [
   { id: arcTestnet.id, label: "ARC TESTNET" },
@@ -16,10 +18,9 @@ function short(addr: string) {
 
 export function WalletCard() {
   const { address, isConnected, chainId, connector } = useAccount();
-  const { connect, connectors, isPending: isConnecting } = useConnect();
-  const { disconnect } = useDisconnect();
+  const { ready, connectWallet, disconnectWallet } = useWalletConnect();
+  const { createWallet, busy: passkeyBusy } = usePasskeyWallet();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
-  const injectedConnector = connectors.find((c) => c.type === "injected") ?? connectors[0];
 
   return (
     <div className="mb-[18px] rounded-2xl border border-ink-line bg-panel">
@@ -31,13 +32,20 @@ export function WalletCard() {
       </div>
 
       {!isConnected ? (
-        <div className="p-[22px]">
+        <div className="flex flex-wrap gap-2.5 p-[22px]">
           <button
-            onClick={() => injectedConnector && connect({ connector: injectedConnector })}
-            disabled={isConnecting || !injectedConnector}
+            onClick={() => createWallet()}
+            disabled={!ready || passkeyBusy}
             className="font-mono rounded-md bg-gold px-4 py-2.5 text-[12px] font-bold text-cream transition-[filter] hover:brightness-110 disabled:opacity-50"
           >
-            {isConnecting ? "CONNECTING…" : "CONNECT WALLET"}
+            GET STARTED WITH A PASSKEY
+          </button>
+          <button
+            onClick={() => connectWallet()}
+            disabled={!ready}
+            className="font-mono rounded-md border-[1.5px] border-ink-line px-4 py-2.5 text-[12px] text-ink-soft transition-colors hover:border-ink-soft hover:text-ink disabled:opacity-50"
+          >
+            CONNECT EXISTING WALLET
           </button>
         </div>
       ) : (
@@ -48,7 +56,7 @@ export function WalletCard() {
               <div className="mt-1 text-[11px] text-ink-faint">{connector?.name ?? "Injected wallet"}</div>
             </div>
             <button
-              onClick={() => disconnect()}
+              onClick={() => disconnectWallet()}
               className="font-mono rounded-md border-[1.5px] border-ink-line px-3 py-2 text-[11px] text-ink-soft transition-colors hover:border-ask hover:text-ask"
             >
               DISCONNECT

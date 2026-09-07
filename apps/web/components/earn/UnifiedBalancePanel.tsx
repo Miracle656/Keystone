@@ -2,15 +2,15 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useAccount, useConnect } from "wagmi";
+import { useAccount } from "wagmi";
 import { useUnifiedBalance } from "@/lib/hooks/useUnifiedBalance";
+import { useWalletConnect } from "@/lib/hooks/useWalletConnect";
 import { formatCurrency, type CurrencyCode } from "@/lib/currency";
 
 export function UnifiedBalancePanel({ currency }: { currency: CurrencyCode }) {
   const { isConnected } = useAccount();
-  const { connect, connectors, isPending } = useConnect();
+  const { ready, connectWallet } = useWalletConnect();
   const { balances, totalHuman, isLoading, solanaWallet } = useUnifiedBalance();
-  const injectedConnector = connectors.find((c) => c.type === "injected") ?? connectors[0];
 
   if (!isConnected) {
     return (
@@ -20,11 +20,11 @@ export function UnifiedBalancePanel({ currency }: { currency: CurrencyCode }) {
           Keystone scans your USDC across every connected chain and shows what it could be earning here — one tap to put it to work.
         </p>
         <button
-          onClick={() => injectedConnector && connect({ connector: injectedConnector })}
-          disabled={isPending || !injectedConnector}
+          onClick={() => connectWallet()}
+          disabled={!ready}
           className="font-mono rounded-lg bg-gold px-7 py-3.5 text-[13px] font-bold text-cream transition-colors hover:bg-gold-bright disabled:opacity-50"
         >
-          {isPending ? "CONNECTING…" : "CONNECT WALLET →"}
+          CONNECT WALLET →
         </button>
       </div>
     );

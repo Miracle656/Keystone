@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls", "delegate_permission/common.get_login_creds"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.divinitylabs.keystone",
+      "sha256_cert_fingerprints": ["B0:F1:EA:0F:8C:C5:DE:BC:E4:7D:89:B5:59:2B:BC:71:B8:22:5E:6D:83:A4:6A:23:F7:BC:F1:FF:EA:0B:62:04"]
+    }
+  }
+]

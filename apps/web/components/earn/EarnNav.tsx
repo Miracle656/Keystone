@@ -3,8 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAccount, useConnect } from "wagmi";
+import { useAccount } from "wagmi";
 import { CURRENCIES, type CurrencyCode } from "@/lib/currency";
+import { useWalletConnect } from "@/lib/hooks/useWalletConnect";
 
 const links = [
   { href: "/trade", label: "TRADE" },
@@ -28,8 +29,7 @@ const CURRENCY_LABEL: Record<CurrencyCode, string> = {
 export function EarnNav({ currency, onCurrency }: { currency: CurrencyCode; onCurrency: (c: CurrencyCode) => void }) {
   const pathname = usePathname();
   const { isConnected } = useAccount();
-  const { connect, connectors, isPending } = useConnect();
-  const injectedConnector = connectors.find((c) => c.type === "injected") ?? connectors[0];
+  const { ready, connectWallet } = useWalletConnect();
 
   return (
     <nav className="flex h-[58px] flex-none items-center justify-between border-b border-ink-line bg-panel px-[22px]">
@@ -76,11 +76,11 @@ export function EarnNav({ currency, onCurrency }: { currency: CurrencyCode; onCu
           </Link>
         ) : (
           <button
-            onClick={() => injectedConnector && connect({ connector: injectedConnector })}
-            disabled={isPending || !injectedConnector}
+            onClick={() => connectWallet()}
+            disabled={!ready}
             className="font-mono rounded-md border-[1.5px] border-ink-line px-3 py-2 text-[12px] text-ink-soft transition-colors hover:border-ink-soft hover:text-ink disabled:opacity-50"
           >
-            {isPending ? "Connecting…" : "Connect wallet"}
+            Connect wallet
           </button>
         )}
       </div>

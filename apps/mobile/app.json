@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "Keystone",
+    "slug": "keystone-mobile",
+    "scheme": "keystone",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.divinitylabs.keystone",
+      "associatedDomains": [
+        "webcredentials:keystone-web-nine.vercel.app"
+      ]
+    },
+    "android": {
+      "package": "com.divinitylabs.keystone",
+      "adaptiveIcon": {
+        "backgroundColor": "#0D0E11",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-web-browser",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "15.1"
+          },
+          "android": {
+            "compileSdkVersion": 34
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "717a01e0-bdcb-4f5a-9bdf-7dfa42c443b4"
+      }
+    }
+  }
+}

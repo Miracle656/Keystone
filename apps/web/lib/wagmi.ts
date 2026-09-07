@@ -1,4 +1,5 @@
-import { createConfig, http, fallback, injected } from "wagmi";
+import { http, fallback } from "wagmi";
+import { createConfig } from "@privy-io/wagmi";
 import { defineChain } from "viem";
 import { baseSepolia, arbitrumSepolia } from "viem/chains";
 import { ARC_TESTNET } from "@keystone/shared";
@@ -33,14 +34,14 @@ const arcTransport = fallback([
 // Router door chains — Base Sepolia and Arbitrum Sepolia use viem's built-in definitions
 // directly (well-known public testnets, no Keystone-specific config needed) so the Router
 // modal can read balances and switch chains for the CCTP v2 bridge legs.
+// Connectors are no longer declared here — Privy owns wallet connection (embedded passkey
+// wallets and external wallets like MetaMask both go through Privy's connectWallet()/passkey
+// hooks, see lib/privy.ts and lib/hooks/useWalletConnect.ts), then this config's WagmiProvider
+// (from @privy-io/wagmi, see Providers.tsx) reflects whatever Privy has connected. This is also
+// why the old MetaMask-vs-Phantom injected() collision fix is moot: Privy's own wallet picker
+// disambiguates injected providers, wagmi here is read/write-only.
 export const wagmiConfig = createConfig({
   chains: [arcTestnet, baseSepolia, arbitrumSepolia],
-  // Explicitly targeted at MetaMask, not a bare injected() — with Phantom's Solana extension
-  // now also connected (see useSolanaWallet), a bare injected() grabs whichever wallet last won
-  // window.ethereum, which on many setups is Phantom's EVM-compat mode, not MetaMask. wagmi's
-  // own metaMask target explicitly excludes providers carrying an isPhantom flag, so EVM
-  // actions stay pointed at MetaMask regardless of extension load order.
-  connectors: [injected({ target: "metaMask" })],
   transports: {
     [arcTestnet.id]: arcTransport,
     [baseSepolia.id]: http(),

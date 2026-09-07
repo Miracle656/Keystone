@@ -3,8 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAccount, useConnect } from "wagmi";
+import { useAccount } from "wagmi";
 import { useRouterModal } from "@/components/app/RouterModalProvider";
+import { useWalletConnect } from "@/lib/hooks/useWalletConnect";
 
 const links = [
   { href: "/trade", label: "TRADE" },
@@ -24,9 +25,8 @@ function short(addr: string) {
 export function PortfolioNav() {
   const pathname = usePathname();
   const { address, isConnected } = useAccount();
-  const { connect, connectors, isPending } = useConnect();
+  const { ready, connectWallet } = useWalletConnect();
   const { open } = useRouterModal();
-  const injectedConnector = connectors.find((c) => c.type === "injected") ?? connectors[0];
 
   return (
     <nav className="flex h-[58px] flex-none items-center justify-between border-b border-ink-line bg-panel px-[22px]">
@@ -78,11 +78,11 @@ export function PortfolioNav() {
           </span>
         ) : (
           <button
-            onClick={() => injectedConnector && connect({ connector: injectedConnector })}
-            disabled={isPending || !injectedConnector}
+            onClick={() => connectWallet()}
+            disabled={!ready}
             className="font-mono rounded-md border-[1.5px] border-ink-line px-3 py-2 text-[12px] text-ink-soft transition-colors hover:border-ink-soft hover:text-ink disabled:opacity-50"
           >
-            {isPending ? "Connecting…" : "Connect wallet"}
+            Connect wallet
           </button>
         )}
       </div>

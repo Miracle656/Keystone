@@ -15,7 +15,11 @@ config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, "node_modules"),
   path.resolve(workspaceRoot, "node_modules"),
 ];
-config.resolver.disableHierarchicalLookup = true;
+// Deliberately NOT setting disableHierarchicalLookup: true — pnpm resolves each package's own
+// dependencies through nested per-package node_modules (e.g. .pnpm/<pkg>/node_modules/<dep>),
+// not a flat hoisted tree. Disabling hierarchical lookup breaks that nested resolution entirely
+// (surfaced as "Unable to resolve <transitive dep>" for one package at a time), even though it's
+// the standard snippet in Expo's monorepo guide — that guide assumes npm/yarn-style hoisting.
 
 // Privy's Expo SDK ships as package-exports-only, and one of its deps ("jose") needs the
 // "browser" export condition — Metro doesn't enable package exports by default. Scope both

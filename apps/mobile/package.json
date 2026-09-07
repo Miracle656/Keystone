@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "main": "entrypoint.js",
   "dependencies": {
+    "@babel/runtime": "^7.25.0",
     "@ethersproject/shims": "^5.8.0",
     "@keystone/shared": "workspace:*",
     "@privy-io/expo": "^0.53.0",
@@ -14,6 +15,7 @@
     "expo-build-properties": "~1.0.0",
     "expo-constants": "~18.0.0",
     "expo-crypto": "~15.0.0",
+    "expo-dev-client": "~6.0.21",
     "expo-linking": "~8.0.0",
     "expo-router": "~6.0.0",
     "expo-secure-store": "~15.0.0",

@@ -18,7 +18,7 @@
     "android": {
       "package": "com.divinitylabs.keystone",
       "adaptiveIcon": {
-        "backgroundColor": "#0D0E11",
+        "backgroundColor": "#151B26",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"

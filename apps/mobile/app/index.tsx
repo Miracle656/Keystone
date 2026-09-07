@@ -125,7 +125,7 @@ export default function Landing() {
             <Pressable style={styles.primaryBtn} onPress={() => router.push("/get-started")}>
               <Text style={styles.primaryBtnText}>CONNECT WALLET</Text>
             </Pressable>
-            <Pressable style={styles.secondaryBtn} onPress={() => router.replace("/(tabs)")}>
+            <Pressable style={styles.secondaryBtn} onPress={() => router.replace("/(tabs)/home")}>
               <Text style={styles.secondaryBtnText}>EXPLORE THE BOOK</Text>
             </Pressable>
 

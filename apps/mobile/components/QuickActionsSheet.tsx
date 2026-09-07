@@ -28,7 +28,16 @@ export function QuickActionsSheet({
   }, [visible]);
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      onRequestClose={onClose}
+      // RN's Modal renders in its own native window, which otherwise ignores Expo SDK 54's
+      // mandatory Android edge-to-edge and shows an opaque system nav bar behind it.
+      statusBarTranslucent
+      navigationBarTranslucent
+    >
       <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
         <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, { opacity: backdropOpacity }]} />
       </Pressable>

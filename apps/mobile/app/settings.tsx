@@ -31,7 +31,7 @@ export default function Settings() {
       )}
 
       {user && (
-        <Pressable style={styles.logout} onPress={() => logout().then(() => router.replace("/landing"))}>
+        <Pressable style={styles.logout} onPress={() => logout().then(() => router.replace("/"))}>
           <Text style={styles.logoutLabel}>Log out</Text>
         </Pressable>
       )}

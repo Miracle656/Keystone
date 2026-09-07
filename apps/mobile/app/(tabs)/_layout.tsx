@@ -16,7 +16,7 @@ export default function TabsLayout() {
           <TabBar {...props} sheetOpen={sheetOpen} onToggleSheet={() => setSheetOpen((v) => !v)} />
         )}
       >
-        <Tabs.Screen name="index" />
+        <Tabs.Screen name="home" />
         <Tabs.Screen name="trade" />
         <Tabs.Screen name="earn" />
         <Tabs.Screen name="activity" />

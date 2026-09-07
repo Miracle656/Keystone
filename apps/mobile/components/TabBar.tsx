@@ -1,14 +1,14 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import Svg, { Path, Rect } from "react-native-svg";
+import Svg, { Path, Rect, Polygon, Defs, LinearGradient, Stop } from "react-native-svg";
 import { colors } from "../lib/theme";
 
-const ROUTE_LABEL: Record<string, string> = { index: "HOME", trade: "TRADE", earn: "EARN", activity: "ACTIVITY" };
+const ROUTE_LABEL: Record<string, string> = { home: "HOME", trade: "TRADE", earn: "EARN", activity: "ACTIVITY" };
 
 function TabIcon({ name, active }: { name: string; active: boolean }) {
   const c = active ? colors.gold : colors.inkFainter;
-  if (name === "index") {
+  if (name === "home") {
     return (
       <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
         <Rect x={3} y={3} width={7.5} height={7.5} rx={2} stroke={c} strokeWidth={2} />
@@ -45,10 +45,19 @@ function TabIcon({ name, active }: { name: string; active: boolean }) {
   );
 }
 
+// Trapezoid — same clip-path: polygon(0 0, 100% 0, 84% 100%, 16% 100%) as the design mockup's
+// FAB, mapped onto the 66x60 button box, instead of the plain rounded square this shipped with.
+const FAB_W = 66;
+const FAB_H = 60;
+const FAB_POINTS = `0,0 ${FAB_W},0 ${FAB_W * 0.84},${FAB_H} ${FAB_W * 0.16},${FAB_H}`;
+
 export function TabBar({ state, navigation, sheetOpen, onToggleSheet }: BottomTabBarProps & { sheetOpen: boolean; onToggleSheet: () => void }) {
   const rotate = useRef(new Animated.Value(0)).current;
 
-  Animated.timing(rotate, { toValue: sheetOpen ? 1 : 0, duration: 380, useNativeDriver: true }).start();
+  useEffect(() => {
+    Animated.timing(rotate, { toValue: sheetOpen ? 1 : 0, duration: 380, useNativeDriver: true }).start();
+  }, [sheetOpen]);
+
   const spin = rotate.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "45deg"] });
 
   const renderTab = (routeIndex: number) => {
@@ -73,13 +82,20 @@ export function TabBar({ state, navigation, sheetOpen, onToggleSheet }: BottomTa
       {renderTab(1)}
       <View style={styles.fabSlot}>
         <Pressable onPress={onToggleSheet} style={styles.fabTouchable} accessibilityLabel="Quick actions">
-          <View style={styles.fabShape}>
-            <Animated.View style={{ transform: [{ rotate: spin }] }}>
-              <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
-                <Path d="M12 5v14M5 12h14" stroke={colors.basalt} strokeWidth={3} strokeLinecap="round" />
-              </Svg>
-            </Animated.View>
-          </View>
+          <Svg width={FAB_W} height={FAB_H} viewBox={`0 0 ${FAB_W} ${FAB_H}`} style={styles.fabShadow}>
+            <Defs>
+              <LinearGradient id="fabGrad" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0" stopColor="#F0C574" />
+                <Stop offset="1" stopColor={colors.gold} />
+              </LinearGradient>
+            </Defs>
+            <Polygon points={FAB_POINTS} fill="url(#fabGrad)" />
+          </Svg>
+          <Animated.View style={[styles.fabIcon, { transform: [{ rotate: spin }] }]}>
+            <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
+              <Path d="M12 5v14M5 12h14" stroke={colors.basalt} strokeWidth={3} strokeLinecap="round" />
+            </Svg>
+          </Animated.View>
         </Pressable>
       </View>
       {renderTab(2)}
@@ -110,18 +126,14 @@ const styles = StyleSheet.create({
   tab: { flex: 1, alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 8 },
   label: { fontFamily: "monospace", fontSize: 9, letterSpacing: 1 },
   fabSlot: { width: 78, alignItems: "center" },
-  fabTouchable: { position: "absolute", top: -22, width: 66, height: 60 },
-  fabShape: {
-    width: 66,
-    height: 60,
-    borderRadius: 18,
-    backgroundColor: colors.gold,
-    alignItems: "center",
-    justifyContent: "center",
+  fabTouchable: { position: "absolute", top: -22, width: FAB_W, height: FAB_H, alignItems: "center", justifyContent: "center" },
+  fabShadow: {
+    position: "absolute",
     shadowColor: colors.gold,
     shadowOpacity: 0.42,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 12 },
     elevation: 10,
   },
+  fabIcon: { alignItems: "center", justifyContent: "center" },
 });

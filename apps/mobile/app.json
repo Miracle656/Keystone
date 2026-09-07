@@ -17,6 +17,7 @@
     },
     "android": {
       "package": "com.divinitylabs.keystone",
+      "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "backgroundColor": "#151B26",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -37,6 +38,14 @@
         {
           "ios": {
             "deploymentTarget": "15.1"
+          }
+        }
+      ],
+      [
+        "react-native-edge-to-edge",
+        {
+          "android": {
+            "enforceNavigationBarContrast": false
           }
         }
       ]

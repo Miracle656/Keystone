@@ -43,13 +43,12 @@ export default function RootLayout() {
     >
       <StatusBar style="light" />
       <Stack
-        initialRouteName="landing"
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: colors.basalt },
         }}
       >
-        <Stack.Screen name="landing" />
+        <Stack.Screen name="index" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="get-started" options={{ presentation: "modal" }} />
         <Stack.Screen name="settings" options={{ presentation: "modal" }} />

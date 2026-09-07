@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { Animated, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Animated, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { router } from "expo-router";
 import { colors } from "../lib/theme";
 import { useToast } from "../lib/hooks/useToast";
@@ -8,19 +8,27 @@ import { ArcNetworkIcon, UsdcIcon } from "../components/BrandIcons";
 import { DemoBadge } from "../components/DemoBadge";
 import { Toast } from "../components/Toast";
 
+const arbitrumLogo = require("../assets/arbitrum.png");
+
 export default function Bridge() {
   const { toast, showToast } = useToast();
   const [chain, setChain] = useState("BASE");
   const [amount, setAmount] = useState("2,500.00");
   const dotX = useRef(new Animated.Value(0)).current;
 
-  Animated.loop(
-    Animated.sequence([
-      Animated.timing(dotX, { toValue: 1, duration: 1600, useNativeDriver: false }),
-      Animated.delay(400),
-      Animated.timing(dotX, { toValue: 0, duration: 0, useNativeDriver: false }),
-    ]),
-  ).start();
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(dotX, { toValue: 1, duration: 1600, useNativeDriver: false }),
+        Animated.delay(400),
+        Animated.timing(dotX, { toValue: 0, duration: 0, useNativeDriver: false }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+
+  const activeChain = BRIDGE_CHAINS.find((c) => c.name === chain) ?? BRIDGE_CHAINS[0];
 
   return (
     <View style={styles.container}>
@@ -44,9 +52,11 @@ export default function Bridge() {
                 onPress={() => setChain(c.name)}
                 style={[styles.chainCard, { backgroundColor: active ? "rgba(231,178,90,0.12)" : colors.panel, borderColor: active ? colors.gold : colors.mortar }]}
               >
-                <View style={styles.chainBadge}>
-                  <Text style={styles.chainBadgeText}>{c.name.slice(0, 2)}</Text>
-                </View>
+                {c.logo ? (
+                  <Image source={arbitrumLogo} style={styles.chainLogo} resizeMode="contain" />
+                ) : (
+                  <View style={[styles.chainBadge, { backgroundColor: c.color }]} />
+                )}
                 <Text style={styles.chainName}>{c.name}</Text>
               </Pressable>
             );
@@ -72,9 +82,11 @@ export default function Bridge() {
 
         <View style={styles.routeCard}>
           <View style={{ alignItems: "center" }}>
-            <View style={styles.chainBadge}>
-              <Text style={styles.chainBadgeText}>{chain.slice(0, 2)}</Text>
-            </View>
+            {activeChain.logo ? (
+              <Image source={arbitrumLogo} style={styles.chainLogo} resizeMode="contain" />
+            ) : (
+              <View style={[styles.chainBadge, { backgroundColor: activeChain.color }]} />
+            )}
             <Text style={styles.routeChainLabel}>{chain}</Text>
           </View>
           <View style={styles.routeMiddle}>
@@ -127,8 +139,8 @@ const styles = StyleSheet.create({
   sectionLabel: { color: colors.inkFaint, fontFamily: "monospace", fontSize: 10, letterSpacing: 1.5, marginBottom: 8 },
   chainGrid: { flexDirection: "row", gap: 8 },
   chainCard: { flex: 1, alignItems: "center", gap: 8, paddingVertical: 14, paddingHorizontal: 6, borderRadius: 16, borderWidth: 1.5 },
-  chainBadge: { width: 32, height: 32, borderRadius: 9, backgroundColor: colors.basalt, alignItems: "center", justifyContent: "center" },
-  chainBadgeText: { color: colors.limestone, fontFamily: "monospace", fontSize: 10, fontWeight: "700" },
+  chainBadge: { width: 32, height: 32, borderRadius: 9 },
+  chainLogo: { width: 32, height: 32, borderRadius: 9 },
   chainName: { color: colors.limestone, fontFamily: "monospace", fontSize: 11, fontWeight: "700" },
   amountCard: { marginTop: 12, backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.mortar, borderRadius: 20, paddingHorizontal: 18, paddingVertical: 16 },
   rowBetween: { flexDirection: "row", justifyContent: "space-between" },

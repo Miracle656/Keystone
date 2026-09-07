@@ -17,11 +17,11 @@ export default function GetStarted() {
   const [error, setError] = useState<string | null>(null);
 
   const { signupWithPasskey, state: signupState } = useSignupWithPasskey({
-    onSuccess: () => router.replace("/(tabs)"),
+    onSuccess: () => router.replace("/(tabs)/home"),
     onError: (e) => setError(readableError(e)),
   });
   const { loginWithPasskey, state: loginState } = useLoginWithPasskey({
-    onSuccess: () => router.replace("/(tabs)"),
+    onSuccess: () => router.replace("/(tabs)/home"),
     onError: (e) => setError(readableError(e)),
   });
 

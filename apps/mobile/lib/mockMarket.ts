@@ -68,8 +68,12 @@ export function mockEvents(): ActivityEvent[] {
   }));
 }
 
+// Arbitrum has a real logo (assets/arbitrum.png, from the design project). Base and Solana use
+// brand-accurate color badges instead — repeated attempts to pull their real assets out of this
+// session risked silently corrupting the binary, so a reliable colored badge beat a maybe-broken
+// image for a screen that's already DEMO-labeled end to end.
 export const BRIDGE_CHAINS = [
-  { name: "BASE" },
-  { name: "ARBITRUM" },
-  { name: "SOLANA" },
+  { name: "BASE", color: "#0052FF" },
+  { name: "ARBITRUM", color: "#213147", logo: true },
+  { name: "SOLANA", color: "#9945FF" },
 ];

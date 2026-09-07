@@ -29,7 +29,13 @@ pnpm run ios      # or: pnpm run android
 
 If `EXPO_PUBLIC_PASSKEY_RELYING_PARTY` is pointed at a different domain (e.g. a custom domain later), update `app.json`'s `associatedDomains` and both `.well-known` files to match.
 
-## What's real vs. not yet built
+## Screens
 
-- Real: passkey signup/login, embedded EOA wallet creation, Arc Testnet USDC/EURC balance reads (same contracts as web), indexer stats.
-- Not yet: Trade ladder, order placement, Router/Bridge, Swap — web-only for now, see the repo's `KEYSTONE_PRD.md` roadmap.
+Ported from the "Keystone Mobile" Claude Design project (`claude.ai/design/p/d9385985-...`) — Splash → Landing → a tabbed app shell (Home / Trade / Earn / Activity) with a floating action button opening a Quick Actions sheet (Swap / Bridge), matching `apps/web`'s dark arch-themed brand.
+
+## What's real vs. demo
+
+Every screen carrying a **DEMO** badge (`components/DemoBadge.tsx`) is not backed by real execution yet — same "real data only, honestly labeled" convention `apps/web` already follows (`KEYSTONE_PRD.md` §9). Concretely:
+
+- **Real**: passkey signup/login, embedded EOA wallet creation, Arc Testnet USDC/EURC balance reads (same contracts as web), the Landing/Home arch visualization's shape (real math, ported 1:1 from the design file).
+- **Demo, labeled**: Trade's order book ladder and order placement, Swap, Bridge, Earn's APY/yield breakdown, Activity's event feed, Home's book-preview mid price. Wiring these to `kit.swap()`/`kit.bridge()` and the real indexer book is a follow-up (see `KEYSTONE_PRD.md`'s roadmap) — `lib/mockMarket.ts` holds all the placeholder data so it's easy to find and replace.
